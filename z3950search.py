@@ -32,6 +32,9 @@ class Worker(QObject):
 
     def run(self):
         total_servers = len(self.servers)
+        if total_servers == 0:  # Prevent division by zero
+            self.finished.emit()
+            return
         self.log_message.emit(f"Total servers to query: {total_servers}")
 
         for server in self.servers:
@@ -45,19 +48,26 @@ class Worker(QObject):
             server_name = server.get('name', 'Unknown Server')
             server_host = server.get('host', 'Unknown Host')
             try:
-                self.progress.emit(self.servers_processed)
                 self.log_message.emit(f"Connecting to {server_name} at {server_host}:{server.get('port', 'Unknown Port')}...")
                 self.run_yaz_client(server, self.query_type, self.query)
-                self.servers_processed += 1
-                self.progress.emit(self.servers_processed)
             except subprocess.TimeoutExpired:
                 self.log_message.emit(f"Connection to {server_name} timed out.\nDetails: Timeout after {self.timeout} seconds.")
             except Exception as e:
                 self.log_message.emit(f"Error querying {server_name}: {e}")
 
-        self.progress.emit(total_servers)  # Ensure progress bar is complete
-        self.finished.emit()
+            # Increment the number of servers processed
+            self.servers_processed += 1
+            
+            # Calculate the progress
+            progress = int((self.servers_processed / total_servers) * 100)
+            
+            # Emit the progress to update the progress bar
+            self.progress.emit(progress)
 
+        # Ensure the progress bar reaches 100% upon completion
+        if not self.cancel_requested:
+            self.progress.emit(100)
+        self.finished.emit()
 
 
     def run_yaz_client(self, server, query_type, query):
@@ -138,9 +148,8 @@ class Worker(QObject):
     def cancel(self):
         """Method to be called when cancel is requested."""
         self.cancel_requested = True
-        if self.process and self.process.poll() is None:  # If the process is still running
+        if self.process and self.process.poll() is None:
             self.process.terminate()
-
 
 class Z3950SearchApp(QWidget):
     def __init__(self):
@@ -201,6 +210,7 @@ class Z3950SearchApp(QWidget):
         # Progress bar
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setValue(0)
+        self.progress_bar.setRange(0, 100)  # Ensure the range is 0 to 100
 
         # Results window
         self.results_window = QListWidget(self)
@@ -295,7 +305,6 @@ class Z3950SearchApp(QWidget):
 
     def start_search(self, query_type, query):
         self.log(f"Starting {query_type} search with query: {query}")
-        self.progress_bar.setMaximum(len(self.servers))
         self.progress_bar.setValue(0)
         self.results_window.clear()
 
@@ -330,22 +339,43 @@ class Z3950SearchApp(QWidget):
 
 
     def cancel_search(self):
+        """Cancel the ongoing search, reset the progress bar, and reset the UI."""
         if self.worker:
-            self.worker.cancel()
-        if self.worker_thread and self.worker_thread.isRunning():
-            self.worker_thread.quit()
-            self.worker_thread.wait()
-            self.log("Search cancelled.")
-            self.search_finished()
+            self.worker.cancel()  # Signal the worker to stop the operation
+
+        if self.worker_thread:
+            self.worker_thread.quit()  # Gracefully exit the thread's event loop
+            self.worker_thread.wait()  # Block until the thread has finished
+
+        # Reset the progress bar and log the cancellation
+        self.progress_bar.setValue(0)
+        self.log("Search cancelled.")
+
+        # Reset the UI state
+        self.search_isbn_button.setEnabled(True)
+        self.search_title_author_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
+
+        # Clean up the worker and thread references
+        self.worker_thread = None
+        self.worker = None
+
 
     def search_finished(self):
         self.log("Search completed.")
         self.search_isbn_button.setEnabled(True)
         self.search_title_author_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+        self.progress_bar.setValue(100)
+
         if self.worker_thread:
-            self.worker_thread.quit()
-            self.worker_thread.wait()
+            self.worker_thread.quit()  # Gracefully exit the thread's event loop
+            self.worker_thread.wait()  # Block until the thread has finished
+            self.worker_thread = None
+
+        self.worker = None  # Clean up the worker reference
+
+
 
     def display_result(self, result):
         summary = f"{result['summary']} - {result['number_of_hits']} hits"
@@ -370,6 +400,7 @@ class Z3950SearchApp(QWidget):
 
 
     def on_result_clicked(self, item):
+        """Handle clicking on a search result and display the initial records."""
         # Reset the state and clear previous records
         self.current_marc_records = []
         self.current_record_index = 0
@@ -394,26 +425,22 @@ class Z3950SearchApp(QWidget):
             self.current_server_info = server_info  # Store the full server info
             self.current_server_info['raw_data'] = raw_data  # Attach the raw data to the server info
 
-            # Load and display the first 3 records
+            # Load and display the first set of records
             self.current_marc_records = self.extract_marc_records(raw_data)
             self.current_record_index = 0
             self.display_current_record()
 
             # Update navigation buttons based on the loaded records
-            self.next_record_button.setEnabled(len(self.current_marc_records) > 1)
-            self.prev_record_button.setEnabled(False)  # No previous records initially
-
-            # Enable the "Load More" button if there are more records to load
-            if len(self.current_marc_records) < self.total_records:
-                self.load_more_button.setEnabled(True)
+            self.update_navigation_buttons()
         else:
             self.log(f"Error: Server information for {server_name_fragment} not found.")
 
     def display_current_record(self):
+        """Display the current MARC record based on the current_record_index."""
         if 0 <= self.current_record_index < len(self.current_marc_records):
             marc_record = self.current_marc_records[self.current_record_index]
-
             formatted_record = []
+
             for field in marc_record.fields:
                 if field.is_control_field():
                     formatted_record.append(f"{field.tag}    {field.data}")
@@ -422,23 +449,13 @@ class Z3950SearchApp(QWidget):
                     formatted_record.append(f"{field.tag} {''.join(field.indicators)} {subfields}")
 
             self.record_details_window.setPlainText('\n'.join(formatted_record))
-
-            # Update button states based on the current record index
-            self.prev_record_button.setEnabled(self.current_record_index > 0)
-            self.next_record_button.setEnabled(self.current_record_index < len(self.current_marc_records) - 1)
-
-            # Enable the "Load More" button if we're on the last loaded record and there are more to load
-            self.load_more_button.setEnabled(self.current_record_index == len(self.current_marc_records) - 1 and len(self.current_marc_records) < self.total_records)
-
-            self.download_button.setEnabled(True)
+            self.download_button.setEnabled(True)  # Enable download button for a valid record
         else:
-            # Handle case when no record is available
             self.record_details_window.setPlainText("No record available.")
-            self.prev_record_button.setEnabled(False)
-            self.next_record_button.setEnabled(False)
-            self.load_more_button.setEnabled(False)
-            self.download_button.setEnabled(False)
+            self.download_button.setEnabled(False)  # Disable download button if no record is displayed
 
+        # Update the state of navigation buttons
+        self.update_navigation_buttons()
 
 
     def update_record_details(self):
@@ -471,23 +488,19 @@ class Z3950SearchApp(QWidget):
             else:
                 self.load_more_button.setEnabled(False)
 
-
     def load_more_records(self):
-        num_records = len(self.current_marc_records)
+        """Load more records starting from the next record after the current set."""
+        start_position = len(self.current_marc_records) + 1
 
-        # Extract server info from the currently selected result
-        server_info = self.current_server_info
-        if server_info is None or not isinstance(server_info, dict):
-            self.log("Error: No server information available.")
-            return
-
-        # Remove raw_data before passing it to Worker
-        server_info_copy = {k: v for k, v in server_info.items() if k != 'raw_data'}
-
-        # Deactivate 'Next Record' button while loading more records
-        self.next_record_button.setEnabled(False)
-
-        self.worker = Worker([server_info_copy], self.current_query_type, self.current_query, start=num_records + 1, num_records=3, timeout=10)
+        self.worker = Worker(
+            [self.current_server_info], 
+            self.current_query_type, 
+            self.current_query, 
+            start=start_position, 
+            num_records=3, 
+            timeout=10
+        )
+        
         self.worker.progress.connect(self.update_progress)
         self.worker.log_message.connect(self.handle_log_message)
         self.worker.result_found.connect(self.append_more_records)
@@ -498,48 +511,55 @@ class Z3950SearchApp(QWidget):
         self.worker_thread.started.connect(self.worker.run)
         self.worker_thread.start()
 
+        # Temporarily disable navigation buttons to avoid issues during loading
+        self.prev_record_button.setEnabled(False)
+        self.next_record_button.setEnabled(False)
+        self.load_more_button.setEnabled(False)
 
     def append_more_records(self, result):
+        """Append newly loaded records to the current list and update UI."""
         new_records = self.extract_marc_records(result['raw_data'])
 
         if new_records:
-            previous_record_count = len(self.current_marc_records)
+            previous_length = len(self.current_marc_records)
             self.current_marc_records.extend(new_records)
-
-            # Automatically navigate to the first new record
-            self.current_record_index = previous_record_count
+            self.current_record_index = previous_length  # Move to the first of the newly loaded records
             self.display_current_record()
-
-            # Update navigation buttons
-            self.prev_record_button.setEnabled(self.current_record_index > 0)
-            self.next_record_button.setEnabled(self.current_record_index < len(self.current_marc_records) - 1)
-
-            # Check if all records are loaded
-            self.load_more_button.setEnabled(len(self.current_marc_records) < self.total_records)
         else:
             self.log("No new records were retrieved.")
 
+        self.update_navigation_buttons()
 
+    def update_navigation_buttons(self):
+        """Enable or disable navigation buttons based on the current state."""
+        self.prev_record_button.setEnabled(self.current_record_index > 0)
+        self.next_record_button.setEnabled(self.current_record_index < len(self.current_marc_records) - 1)
+        self.load_more_button.setEnabled(
+            len(self.current_marc_records) < self.total_records and 
+            self.current_record_index == len(self.current_marc_records) - 1
+        )
 
     def show_next_record(self):
+        """Navigate to the next record."""
         if self.current_record_index < len(self.current_marc_records) - 1:
             self.current_record_index += 1
             self.display_current_record()
 
     def show_prev_record(self):
+        """Navigate to the previous record."""
         if self.current_record_index > 0:
             self.current_record_index -= 1
             self.display_current_record()
-
-
+    
     def extract_marc_records(self, raw_data):
         records = []
         record_blocks = raw_data.strip().split('\n\n')
         for block in record_blocks:
             record = self.extract_marc_record(block)
-            if record:
+            if record and record.fields:  # Only append if the record is valid and contains fields
                 records.append(record)
         return records
+
 
     def extract_marc_record(self, raw_data):
         try:
