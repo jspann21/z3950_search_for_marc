@@ -13,12 +13,14 @@ from pymarc import Record, Field, Subfield
 
 
 class Worker(QObject):
+    """Worker class for handling Z39.50 searches in a separate thread."""
     finished = pyqtSignal()
     progress = pyqtSignal(int)
     log_message = pyqtSignal(str)
     result_found = pyqtSignal(dict)
 
     def __init__(self, servers, query_type, query, timeout=60, start=1, num_records=3):
+        """Initialize the worker with the given parameters."""
         super().__init__()
         self.servers = servers
         self.query_type = query_type
@@ -31,6 +33,7 @@ class Worker(QObject):
         self.cancel_requested = False  # Flag to track cancellation
 
     def run(self):
+        """Main loop for querying servers."""
         total_servers = len(self.servers)
         if total_servers == 0:  # Prevent division by zero
             self.finished.emit()
@@ -48,19 +51,25 @@ class Worker(QObject):
             server_name = server.get('name', 'Unknown Server')
             server_host = server.get('host', 'Unknown Host')
             try:
-                self.log_message.emit(f"Connecting to {server_name} at {server_host}:{server.get('port', 'Unknown Port')}...")
+                self.log_message.emit(
+                    f"Connecting to {server_name} at {server_host}:"
+                    f"{server.get('port', 'Unknown Port')}..."
+                )
                 self.run_yaz_client(server, self.query_type, self.query)
             except subprocess.TimeoutExpired:
-                self.log_message.emit(f"Connection to {server_name} timed out.\nDetails: Timeout after {self.timeout} seconds.")
+                self.log_message.emit(
+                    f"Connection to {server_name} timed out.\n"
+                    f"Details: Timeout after {self.timeout} seconds."
+                )
             except Exception as e:
                 self.log_message.emit(f"Error querying {server_name}: {e}")
 
             # Increment the number of servers processed
             self.servers_processed += 1
-            
+
             # Calculate the progress
             progress = int((self.servers_processed / total_servers) * 100)
-            
+
             # Emit the progress to update the progress bar
             self.progress.emit(progress)
 
@@ -69,29 +78,34 @@ class Worker(QObject):
             self.progress.emit(100)
         self.finished.emit()
 
-
     def run_yaz_client(self, server, query_type, query):
+        """Run the YAZ client to query the server."""
         try:
             # Validate server data
             server_name = server.get('name', 'Unknown Server')
             server_host = server.get('host', 'Unknown Host')
             server_port = server.get('port', 'Unknown Port')
 
-            if server_name == 'Unknown Server' or server_host == 'Unknown Host' or server_port == 'Unknown Port':
+            if (server_name == 'Unknown Server' or server_host == 'Unknown Host' or
+                    server_port == 'Unknown Port'):
                 self.log_message.emit(f"Invalid server configuration: {server}")
                 return
 
             yaz_client_path = 'C:\\Program Files\\YAZ\\bin\\yaz-client.exe'
             if query_type == 'isbn':
                 use_attr = '7'
-                search_command = f'find @attr 1={use_attr} @attr 4=1 "{query}"\nshow {self.start}+{self.num_records}\n'
+                search_command = (
+                    f'find @attr 1={use_attr} @attr 4=1 "{query}"\n'
+                    f'show {self.start}+{self.num_records}\n'
+                )
             elif query_type == 'title_author':
                 use_attr_title = '4'
                 use_attr_author = '1003'
                 title, author = query
                 search_command = (
                     f'find @and @attr 1={use_attr_title} @attr 4=1 "{title}" '
-                    f'@attr 1={use_attr_author} @attr 4=1 "{author}"\nshow {self.start}+{self.num_records}\n'
+                    f'@attr 1={use_attr_author} @attr 4=1 "{author}"\n'
+                    f'show {self.start}+{self.num_records}\n'
                 )
             else:
                 self.log_message.emit(f"Unknown query type for {server['name']}.")
@@ -123,8 +137,14 @@ class Worker(QObject):
             if self.process.returncode == 0 and stdout.strip():
                 if "Number of hits:" in stdout:
                     # Extract the number of hits
-                    hits_line = next((line for line in stdout.splitlines() if "Number of hits:" in line), None)
-                    number_of_hits = int(hits_line.split(":")[1].split(",")[0].strip()) if hits_line else 0
+                    hits_line = next(
+                        (line for line in stdout.splitlines() if "Number of hits:" in line),
+                        None
+                    )
+                    number_of_hits = (
+                        int(hits_line.split(":")[1].split(",")[0].strip())
+                        if hits_line else 0
+                    )
 
                     # Emit result if records are found
                     if number_of_hits > 0:
@@ -151,8 +171,11 @@ class Worker(QObject):
         if self.process and self.process.poll() is None:
             self.process.terminate()
 
+
 class Z3950SearchApp(QWidget):
+    """Main application class for the Z39.50 MARC Record Search."""
     def __init__(self):
+        """Initialize the application and UI."""
         super().__init__()
         self.initUI()
         self.load_servers()
@@ -165,7 +188,7 @@ class Z3950SearchApp(QWidget):
         self.current_query = None  # Store the current query
 
     def initUI(self):
-        # Set up the main layout
+        """Initialize the user interface."""
         self.setWindowTitle('Z39.50 MARC Record Search')
         self.setGeometry(100, 100, 800, 600)
         main_layout = QVBoxLayout()
@@ -263,32 +286,34 @@ class Z3950SearchApp(QWidget):
         self.setLayout(main_layout)
 
     def load_servers(self):
+        """Load server configurations from a JSON file."""
         try:
-            # Attempt to load the servers from 'servers.json'
             with open('servers.json', 'r') as f:
                 self.servers = json.load(f)
             self.log(f"Loaded {len(self.servers)} servers from 'servers.json'.")
         except json.JSONDecodeError as e:
-            # If there's an error, log it and set self.servers to an empty list
             self.servers = []
             self.log(f"Failed to load servers from 'servers.json': {e}")
         except Exception as e:
-            # Catch any other exceptions
             self.servers = []
             self.log(f"An unexpected error occurred while loading servers: {e}")
 
     def log(self, message):
+        """Log messages to the log window."""
         self.log_window.append(message)
         self.log_window.ensureCursorVisible()
 
     def update_progress(self, value):
+        """Update the progress bar with the given value."""
         if isinstance(value, int):
             self.progress_bar.setValue(value)
 
     def handle_log_message(self, message):
+        """Handle log messages emitted by the worker."""
         self.log(message)
 
     def start_isbn_search(self):
+        """Start a search by ISBN."""
         isbn = self.isbn_input.text().strip()
         if not isbn:
             self.log("Please enter an ISBN.")
@@ -296,6 +321,7 @@ class Z3950SearchApp(QWidget):
         self.start_search('isbn', isbn)
 
     def start_title_author_search(self):
+        """Start a search by title and author."""
         title = self.title_input.text().strip()
         author = self.author_input.text().strip()
         if not title or not author:
@@ -304,6 +330,7 @@ class Z3950SearchApp(QWidget):
         self.start_search('title_author', (title, author))
 
     def start_search(self, query_type, query):
+        """Start a search based on the query type and query provided."""
         self.log(f"Starting {query_type} search with query: {query}")
         self.progress_bar.setValue(0)
         self.results_window.clear()
@@ -337,7 +364,6 @@ class Z3950SearchApp(QWidget):
         self.search_title_author_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
 
-
     def cancel_search(self):
         """Cancel the ongoing search, reset the progress bar, and reset the UI."""
         if self.worker:
@@ -360,8 +386,8 @@ class Z3950SearchApp(QWidget):
         self.worker_thread = None
         self.worker = None
 
-
     def search_finished(self):
+        """Handle the completion of a search or cancellation."""
         self.log("Search completed.")
         self.search_isbn_button.setEnabled(True)
         self.search_title_author_button.setEnabled(True)
@@ -375,9 +401,8 @@ class Z3950SearchApp(QWidget):
 
         self.worker = None  # Clean up the worker reference
 
-
-
     def display_result(self, result):
+        """Display search results in the results window."""
         summary = f"{result['summary']} - {result['number_of_hits']} hits"
         self.log(f"Displaying result from {summary}")
 
@@ -397,7 +422,6 @@ class Z3950SearchApp(QWidget):
             self.prev_record_button.setEnabled(False)
             self.next_record_button.setEnabled(False)
             self.load_more_button.setEnabled(False)
-
 
     def on_result_clicked(self, item):
         """Handle clicking on a search result and display the initial records."""
@@ -419,7 +443,10 @@ class Z3950SearchApp(QWidget):
         server_name_fragment = summary.split('(')[0].strip().lower()  # Extract and lowercase
 
         # Perform a case-insensitive match to find the correct server
-        server_info = next((server for server in self.servers if server_name_fragment in server['name'].lower()), None)
+        server_info = next(
+            (server for server in self.servers if server_name_fragment in server['name'].lower()),
+            None
+        )
 
         if server_info:
             self.current_server_info = server_info  # Store the full server info
@@ -445,8 +472,12 @@ class Z3950SearchApp(QWidget):
                 if field.is_control_field():
                     formatted_record.append(f"{field.tag}    {field.data}")
                 else:
-                    subfields = ' '.join([f"${sub.code} {sub.value}" for sub in field.subfields])
-                    formatted_record.append(f"{field.tag} {''.join(field.indicators)} {subfields}")
+                    subfields = ' '.join(
+                        [f"${sub.code} {sub.value}" for sub in field.subfields]
+                    )
+                    formatted_record.append(
+                        f"{field.tag} {''.join(field.indicators)} {subfields}"
+                    )
 
             self.record_details_window.setPlainText('\n'.join(formatted_record))
             self.download_button.setEnabled(True)  # Enable download button for a valid record
@@ -457,8 +488,8 @@ class Z3950SearchApp(QWidget):
         # Update the state of navigation buttons
         self.update_navigation_buttons()
 
-
     def update_record_details(self):
+        """Update the record details window with the current MARC record."""
         if not self.current_marc_records or self.current_record_index >= len(self.current_marc_records):
             self.record_details_window.setPlainText("No more records available.")
             self.download_button.setEnabled(False)
@@ -482,7 +513,7 @@ class Z3950SearchApp(QWidget):
         self.next_record_button.setEnabled(self.current_record_index < len(self.current_marc_records) - 1)
 
         # Enable load more button one record earlier
-        if self.current_record_index == len(self.current_marc_records) - 2:  # Adjusted to -2 instead of -1
+        if self.current_record_index == len(self.current_marc_records) - 2:
             if len(self.current_marc_records) < self.total_records:
                 self.load_more_button.setEnabled(True)
             else:
@@ -493,14 +524,14 @@ class Z3950SearchApp(QWidget):
         start_position = len(self.current_marc_records) + 1
 
         self.worker = Worker(
-            [self.current_server_info], 
-            self.current_query_type, 
-            self.current_query, 
-            start=start_position, 
-            num_records=3, 
+            [self.current_server_info],
+            self.current_query_type,
+            self.current_query,
+            start=start_position,
+            num_records=3,
             timeout=10
         )
-        
+
         self.worker.progress.connect(self.update_progress)
         self.worker.log_message.connect(self.handle_log_message)
         self.worker.result_found.connect(self.append_more_records)
@@ -535,7 +566,7 @@ class Z3950SearchApp(QWidget):
         self.prev_record_button.setEnabled(self.current_record_index > 0)
         self.next_record_button.setEnabled(self.current_record_index < len(self.current_marc_records) - 1)
         self.load_more_button.setEnabled(
-            len(self.current_marc_records) < self.total_records and 
+            len(self.current_marc_records) < self.total_records and
             self.current_record_index == len(self.current_marc_records) - 1
         )
 
@@ -550,8 +581,9 @@ class Z3950SearchApp(QWidget):
         if self.current_record_index > 0:
             self.current_record_index -= 1
             self.display_current_record()
-    
+
     def extract_marc_records(self, raw_data):
+        """Extract MARC records from the raw data."""
         records = []
         record_blocks = raw_data.strip().split('\n\n')
         for block in record_blocks:
@@ -560,8 +592,8 @@ class Z3950SearchApp(QWidget):
                 records.append(record)
         return records
 
-
     def extract_marc_record(self, raw_data):
+        """Extract a single MARC record from the raw data."""
         try:
             record = Record()
             lines = raw_data.strip().split('\n')
@@ -601,9 +633,10 @@ class Z3950SearchApp(QWidget):
             return None
 
     def download_marc_record(self):
+        """Download the currently displayed MARC record as a file."""
         if hasattr(self, 'current_marc_records') and self.current_marc_records:
-            # Extract author and title to create a default filename
             marc_record = self.current_marc_records[self.current_record_index]
+
             author = title = "MARC_Record"
             for field in marc_record.get_fields('100', '110', '111', '245'):
                 if field.tag.startswith('1'):  # Author fields
@@ -614,7 +647,10 @@ class Z3950SearchApp(QWidget):
             default_filename = f"{author}_{title}".replace(" ", "_")
 
             options = QFileDialog.Options()
-            file_name, _ = QFileDialog.getSaveFileName(self, "Save MARC Record", default_filename, "MARC Files (*.mrc);;All Files (*)", options=options)
+            file_name, _ = QFileDialog.getSaveFileName(
+                self, "Save MARC Record", default_filename,
+                "MARC Files (*.mrc);;All Files (*)", options=options
+            )
             if file_name:
                 with open(file_name, 'wb') as file:
                     file.write(marc_record.as_marc())
@@ -623,7 +659,7 @@ class Z3950SearchApp(QWidget):
             QMessageBox.warning(self, "Error", "No MARC record to save.")
 
     def closeEvent(self, event):
-        # Ensure the worker thread is properly terminated when the application is closed
+        """Ensure the worker thread is properly terminated when the application is closed."""
         if self.worker_thread and self.worker_thread.isRunning():
             self.worker.cancel()
             self.worker_thread.quit()
