@@ -9,8 +9,8 @@ This repository contains a PyQt5-based graphical user interface (GUI) applicatio
     - [Running a Search](#running-a-search)
     - [Handling Results and Navigation](#handling-results-and-navigation)
 - [Supporting Scripts](#supporting-scripts)
-  - [`retrieve_loc_z3950_servers.py`](#retrieve_loc_z3950_serverspy)
-  - [`test_loc_z3950_servers.py`](#test_loc_z3950_serverspy)
+  - [Retrieve Z39.50 Servers: `retrieve_loc_z3950_servers.py`](#retrieve-z3950-servers-retrieve_loc_z3950_serverspy)
+  - [Test Z39.50 Servers: `test_loc_z3950_servers.py`](#test-z3950-servers-test_loc_z3950_serverspy)
 - [Configuration: `servers.json`](#configuration-serversjson)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -87,7 +87,7 @@ The **Z39.50 MARC Record Search** application is the main graphical interface fo
 
 ### Supporting Scripts
 
-#### `retrieve_loc_z3950_servers.py`
+#### Retrieve z39.50 servers `retrieve_loc_z3950_servers.py`
 
 This script is designed to pull Z39.50 server information from the Library of Congress (LOC) website. It scrapes the server list provided on the LOC's public resources and compiles the data into a format that can be used in the `servers.json` file for the Z39.50 search tool.
 
@@ -110,7 +110,7 @@ The process flow of the script is as follows:
 This script simplifies the process of obtaining and updating the Z39.50 server list from the LOC, ensuring that your `servers.json` file is always up to date with the latest publicly available Z39.50 servers.
 
 
-#### `test_loc_z3950_servers.py`
+#### Test z39.50 servers `test_loc_z3950_servers.py`
 
 This script is used to test the connectivity of each Z39.50 server retrieved by `retrieve_loc_z3950_servers.py`. It ensures that the servers are available and do not require authentication (since some Z39.50 servers are restricted and may not be publicly accessible). 
 
