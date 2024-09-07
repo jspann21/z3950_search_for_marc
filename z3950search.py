@@ -669,7 +669,7 @@ class Z3950SearchApp(QWidget):
             self.log("Displaying previously fetched record.")
 
     def extract_marc_record(self, raw_data):
-        """Extract a single MARC record from the raw data."""
+        """Extract a single MARC record from the raw data, handling malformed $$ fields."""
         try:
             record = Record()
             for line in raw_data.splitlines():
@@ -677,9 +677,29 @@ class Z3950SearchApp(QWidget):
                     tag = line[:3]
                     if 10 <= int(tag) < 900:
                         indicators = line[4:6]
+                        line_content = line[7:]
+
+                        # Check for the presence of $$ in the line content
+                        while "$$" in line_content:
+                            # Find the starting position of $$
+                            start_pos = line_content.index("$$")
+                            end_pos = line_content.find("$", start_pos + 2)
+
+                            if end_pos == -1:
+                                # No other $ found, log and remove everything after $$
+                                removed_content = line_content[start_pos:]
+                                line_content = line_content[:start_pos]
+                                self.log(f"Malformed $$ detected, removed: '{removed_content}'")
+                            else:
+                                # Log and remove content from $$ to the next $
+                                removed_content = line_content[start_pos:end_pos]
+                                line_content = line_content[:start_pos] + line_content[end_pos:]
+                                self.log(f"Malformed $$ detected, removed: '{removed_content}'")
+
+                        # Now split the sanitized line content into subfields
                         subfields = [
                             Subfield(code=part[0], value=part[1:].strip())
-                            for part in line[7:].split("$")[1:]
+                            for part in line_content.split("$")[1:]
                         ]
                         record.add_field(
                             Field(
