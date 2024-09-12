@@ -243,6 +243,7 @@ class Worker(QObject):
         show_command = f"show {start}\n"
         return search_command + show_command
 
+
 def clean_yaz_output(raw_data):
     """Clean YAZ client log output and return only the MARC record data."""
     marc_lines = []
@@ -425,16 +426,25 @@ class Z3950SearchApp(QWidget):
         if sender == self.search_isbn_button:
             query_type = "isbn"
             query = self.isbn_input.text().strip()
+
             if not query:
                 self.log("Please enter an ISBN.")
                 return
+
+            # Validate ISBN
+            if not self.validate_isbn(query):
+                self.log("Invalid ISBN. Please enter a valid ISBN.")
+                return
+
         elif sender == self.search_title_author_button:
             query_type = "title_author"
             title = self.title_input.text().strip()
             author = self.author_input.text().strip()
+
             if not title or not author:
                 self.log("Please enter both Title and Author.")
                 return
+
             query = (title, author)
         else:
             self.log("Unknown search type.")
@@ -470,6 +480,30 @@ class Z3950SearchApp(QWidget):
         self.worker_thread.start()
 
         self.toggle_search_buttons(False)  # Disable search buttons
+
+    def validate_isbn(self, isbn):
+        """Validates the ISBN using regex and checksum validation, treating lowercase 'x' as 'X' for usability."""
+        isbn = (
+            isbn.replace("-", "").replace(" ", "").upper()
+        )  # Remove dashes, spaces, and convert to uppercase
+        regex = re.compile(r"^(97(8|9))?\d{9}(\d|X)$")  # Match ISBN-10 or ISBN-13
+
+        if not regex.match(isbn):
+            return False
+
+        # Check ISBN-10
+        if len(isbn) == 10:
+            total = sum(
+                (10 - i) * (10 if c == "X" else int(c)) for i, c in enumerate(isbn)
+            )
+            return total % 11 == 0
+
+        # Check ISBN-13
+        elif len(isbn) == 13:
+            total = sum((1 if i % 2 == 0 else 3) * int(c) for i, c in enumerate(isbn))
+            return total % 10 == 0
+
+        return False
 
     def toggle_search_buttons(self, state):
         """Enable or disable search buttons."""
