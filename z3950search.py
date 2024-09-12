@@ -113,17 +113,21 @@ class Worker(QObject):
             if self.cancel_requested:  # Check if cancellation was requested
                 break
 
-            server_name = server.get("name", "Unknown Server")
+            current_server_name = server.get("name", "Unknown Server")
             try:
                 self.run_yaz_client(server)
             except subprocess.TimeoutExpired:
-                self.log_message.emit(f"Connection to {server_name} timed out.")
+                self.log_message.emit(f"Connection to {current_server_name} timed out.")
             except subprocess.CalledProcessError as e:
-                self.log_message.emit(f"Subprocess error querying {server_name}: {e}")
+                self.log_message.emit(
+                    f"Subprocess error querying {current_server_name}: {e}"
+                )
             except OSError as e:
-                self.log_message.emit(f"OS error querying {server_name}: {e}")
+                self.log_message.emit(f"OS error querying {current_server_name}: {e}")
             except Exception as e:
-                self.log_message.emit(f"Unexpected error querying {server_name}: {e}")
+                self.log_message.emit(
+                    f"Unexpected error querying {current_server_name}: {e}"
+                )
                 raise  # Optionally re-raise the exception after logging
 
             progress = int((self.servers.index(server) + 1) / total_servers * 100)
@@ -138,13 +142,13 @@ class Worker(QObject):
         if self.cancel_requested:
             return  # Exit early if the search is cancelled
 
-        server_name = server.get("name", "Unknown Server")
+        load_server_name = server.get("name", "Unknown Server")
 
         try:
             cmd, full_command = self.build_command(server)
             command_for_logging = full_command.replace("\n", " ")
             self.log_message.emit(
-                f"Connecting to {server_name} with command: {cmd} with {command_for_logging}"
+                f"Connecting to {load_server_name} with command: {cmd} with {command_for_logging}"
             )
 
             with subprocess.Popen(
@@ -155,6 +159,7 @@ class Worker(QObject):
                 text=True,
                 encoding="utf-8",
                 errors="replace",
+                creationflags=subprocess.CREATE_NO_WINDOW,  # Suppress terminal window
             ) as process:
                 self.process = process
                 stdout, _ = process.communicate(full_command, timeout=self.timeout)
@@ -166,15 +171,17 @@ class Worker(QObject):
                 if process.returncode == 0 and stdout.strip():
                     self.handle_successful_response(stdout, server)
                 else:
-                    self.log_message.emit(f"No records found in {server_name}.")
+                    self.log_message.emit(f"No records found in {load_server_name}.")
 
         except subprocess.TimeoutExpired:
-            self.log_message.emit(f"Connection to {server_name} timed out.")
+            self.log_message.emit(f"Connection to {load_server_name} timed out.")
         except (subprocess.CalledProcessError, OSError, ValueError) as e:
-            self.log_message.emit(f"Error querying {server_name}: {e}")
+            self.log_message.emit(f"Error querying {load_server_name}: {e}")
         except Exception as e:
             if not self.cancel_requested:
-                self.log_message.emit(f"Unexpected error querying {server_name}: {e}")
+                self.log_message.emit(
+                    f"Unexpected error querying {load_server_name}: {e}"
+                )
             raise
         finally:
             self.process = None
@@ -190,7 +197,7 @@ class Worker(QObject):
 
     def handle_successful_response(self, stdout, server):
         """Handle the successful response from the YAZ client."""
-        cleaned_data = self.clean_yaz_output(stdout)
+        cleaned_data = clean_yaz_output(stdout)
         hits_line = next(
             (line for line in stdout.splitlines() if "Number of hits:" in line), None
         )
@@ -236,18 +243,29 @@ class Worker(QObject):
         show_command = f"show {start}\n"
         return search_command + show_command
 
-    def clean_yaz_output(self, raw_data):
-        """Clean YAZ client log output and return only the MARC record data."""
-        marc_lines = []
-        for line in raw_data.splitlines():
-            if len(line) >= 4 and line[:3].isdigit() and line[3] == " ":
-                tag = line[:3]  # Extract the MARC tag
-                tag_int = int(tag)
+def clean_yaz_output(raw_data):
+    """Clean YAZ client log output and return only the MARC record data."""
+    marc_lines = []
+    for line in raw_data.splitlines():
+        if len(line) >= 4 and line[:3].isdigit() and line[3] == " ":
+            tag = line[:3]  # Extract the MARC tag
+            tag_int = int(tag)
 
-                # Ignore control fields (000-009) and tags 900 or greater
-                if 10 <= tag_int < 900:
-                    marc_lines.append(line)
-        return "\n".join(marc_lines)
+            # Ignore control fields (000-009) and tags 900 or greater
+            if 10 <= tag_int < 900:
+                marc_lines.append(line)
+    return "\n".join(marc_lines)
+
+
+def get_record_info(record):
+    """Extract author and title from the MARC record."""
+    author = title = "MARC_Record"
+    for field in record.get_fields("100", "110", "111", "245"):
+        if field.tag.startswith("1"):
+            author = re.sub(r"[^\w\s]", "", field["a"]).strip()
+        if field.tag == "245":
+            title = re.sub(r"[^\w\s]", "", field["a"]).strip()
+    return author, title
 
 
 class Z3950SearchApp(QWidget):
@@ -255,7 +273,21 @@ class Z3950SearchApp(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.initUI()
+        self.servers = None
+        self.next_record_button = None
+        self.prev_record_button = None
+        self.download_button = None
+        self.log_window = None
+        self.record_details_window = None
+        self.results_window = None
+        self.progress_bar = None
+        self.cancel_button = None
+        self.search_title_author_button = None
+        self.author_input = None
+        self.title_input = None
+        self.search_isbn_button = None
+        self.isbn_input = None
+        self.init_ui()
         self.load_servers()
         self.process = None
         self.worker = None
@@ -266,9 +298,9 @@ class Z3950SearchApp(QWidget):
         self.current_server_info = None  # Store the current server info
         self.current_query_type = None  # Store the current query type
         self.current_query = None  # Store the current query
-        self.timeout = 10  # Set a default timeout value (in seconds)
+        self.timeout = 5  # Set a default timeout value (in seconds)
 
-    def initUI(self):
+    def init_ui(self):
         """Initialize the user interface."""
         self.setWindowTitle("Z39.50 MARC Record Search")
         self.setGeometry(100, 100, 800, 600)
@@ -377,22 +409,35 @@ class Z3950SearchApp(QWidget):
 
     def start_search(self):
         """Start a search based on the input fields (ISBN or Title & Author)."""
-        query_type = None
-        query = None
 
-        # Determine if it's an ISBN search or a Title/Author search
-        isbn = self.isbn_input.text().strip()
-        title = self.title_input.text().strip()
-        author = self.author_input.text().strip()
+        # Check if servers are loaded
+        if not self.servers:
+            self.load_servers()
+            if not self.servers:
+                self.log(
+                    "No servers loaded. Please ensure 'servers.json' is in the correct "
+                    "location."
+                )
+                return
 
-        if isbn:
+        # Determine which button was clicked
+        sender = self.sender()
+        if sender == self.search_isbn_button:
             query_type = "isbn"
-            query = isbn
-        elif title and author:
+            query = self.isbn_input.text().strip()
+            if not query:
+                self.log("Please enter an ISBN.")
+                return
+        elif sender == self.search_title_author_button:
             query_type = "title_author"
+            title = self.title_input.text().strip()
+            author = self.author_input.text().strip()
+            if not title or not author:
+                self.log("Please enter both Title and Author.")
+                return
             query = (title, author)
         else:
-            self.log("Please enter an ISBN or both Title and Author.")
+            self.log("Unknown search type.")
             return
 
         self.record_details_window.clear()
@@ -424,10 +469,12 @@ class Z3950SearchApp(QWidget):
         self.worker_thread.started.connect(self.worker.run)
         self.worker_thread.start()
 
-        self.toggle_search_buttons(False)
+        self.toggle_search_buttons(False)  # Disable search buttons
 
     def toggle_search_buttons(self, state):
         """Enable or disable search buttons."""
+        self.search_isbn_button.setEnabled(state)
+        self.search_title_author_button.setEnabled(state)
         self.cancel_button.setEnabled(not state)
 
     def cancel_search(self):
@@ -538,6 +585,7 @@ class Z3950SearchApp(QWidget):
 
     def show_next_record(self):
         """Navigate to the next record by running a new yaz-client to pull the next record."""
+        server_name = None
         if self.current_record_index < self.total_records - 1:
             self.current_record_index += 1
 
@@ -605,7 +653,7 @@ class Z3950SearchApp(QWidget):
                         )
 
                         # Clean YAZ output to extract only the MARC record data
-                        cleaned_data = self.clean_yaz_output(stdout)
+                        cleaned_data = clean_yaz_output(stdout)
 
                         # Extract MARC record data from the cleaned output
                         marc_record = self.extract_marc_record(cleaned_data)
@@ -648,19 +696,6 @@ class Z3950SearchApp(QWidget):
             self.log("No more records to display.")
             self.next_record_button.setEnabled(False)
 
-    def clean_yaz_output(self, raw_data):
-        """Clean YAZ client log output and return only the MARC record data."""
-        marc_lines = []
-        for line in raw_data.splitlines():
-            if len(line) >= 4 and line[:3].isdigit() and line[3] == " ":
-                tag = line[:3]  # Extract the MARC tag
-                tag_int = int(tag)
-
-                # Ignore control fields (000-009) and tags 900 or greater
-                if 10 <= tag_int < 900:
-                    marc_lines.append(line)
-        return "\n".join(marc_lines)
-
     def show_prev_record(self):
         """Navigate to the previous record."""
         if self.current_record_index > 0:
@@ -677,6 +712,15 @@ class Z3950SearchApp(QWidget):
                     tag = line[:3]
                     if 10 <= int(tag) < 900:
                         indicators = line[4:6]
+
+                        # Handle indicators properly (default to None if invalid)
+                        if len(indicators) == 2:
+                            indicators = [indicators[0], indicators[1]]
+                        else:
+                            indicators = (
+                                None  # Set to None if not exactly two characters
+                            )
+
                         line_content = line[7:]
 
                         # Check for the presence of $$ in the line content
@@ -689,22 +733,30 @@ class Z3950SearchApp(QWidget):
                                 # No other $ found, log and remove everything after $$
                                 removed_content = line_content[start_pos:]
                                 line_content = line_content[:start_pos]
-                                self.log(f"Malformed $$ detected, removed: '{removed_content}'")
+                                self.log(
+                                    f"Malformed $$ detected, removed: '{removed_content}'"
+                                )
                             else:
                                 # Log and remove content from $$ to the next $
                                 removed_content = line_content[start_pos:end_pos]
-                                line_content = line_content[:start_pos] + line_content[end_pos:]
-                                self.log(f"Malformed $$ detected, removed: '{removed_content}'")
+                                line_content = (
+                                    line_content[:start_pos] + line_content[end_pos:]
+                                )
+                                self.log(
+                                    f"Malformed $$ detected, removed: '{removed_content}'"
+                                )
 
                         # Now split the sanitized line content into subfields
                         subfields = [
                             Subfield(code=part[0], value=part[1:].strip())
                             for part in line_content.split("$")[1:]
                         ]
+
+                        # Create and add the field to the record
                         record.add_field(
                             Field(
                                 tag=tag,
-                                indicators=list(indicators),
+                                indicators=indicators,  # Properly handle indicators or set to None
                                 subfields=subfields,
                             )
                         )
@@ -721,30 +773,25 @@ class Z3950SearchApp(QWidget):
         """Download the currently displayed MARC record as a file."""
         if self.current_marc_records:
             record = self.current_marc_records[self.current_record_index]
-            author, title = self.get_record_info(record)
-            default_filename = f"{author}_{title}".replace(" ", "_")
 
-            file_name, _ = QFileDialog.getSaveFileName(
-                self, "Save MARC Record", default_filename, "MARC Files (*.mrc)"
-            )
-            if file_name:
-                with open(file_name, "wb") as file:
-                    file.write(record.as_marc())
-                QMessageBox.information(
-                    self, "Success", "MARC record saved successfully!"
+            # Check if record is a proper pymarc Record object
+            if isinstance(record, Record):
+                author, title = get_record_info(record)
+                default_filename = f"{author}_{title}".replace(" ", "_")
+
+                file_name, _ = QFileDialog.getSaveFileName(
+                    self, "Save MARC Record", default_filename, "MARC Files (*.mrc)"
                 )
+                if file_name:
+                    with open(file_name, "wb") as file:
+                        file.write(record.as_marc())
+                    QMessageBox.information(
+                        self, "Success", "MARC record saved successfully!"
+                    )
+            else:
+                QMessageBox.warning(self, "Error", "Invalid MARC record format.")
         else:
             QMessageBox.warning(self, "Error", "No MARC record to save.")
-
-    def get_record_info(self, record):
-        """Extract author and title from the MARC record."""
-        author = title = "MARC_Record"
-        for field in record.get_fields("100", "110", "111", "245"):
-            if field.tag.startswith("1"):
-                author = re.sub(r"[^\w\s]", "", field["a"]).strip()
-            if field.tag == "245":
-                title = re.sub(r"[^\w\s]", "", field["a"]).strip()
-        return author, title
 
     def closeEvent(self, event):
         """Ensure the worker thread and subprocesses are properly
