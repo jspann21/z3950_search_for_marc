@@ -481,12 +481,13 @@ class Z3950SearchApp(QWidget):
 
         self.toggle_search_buttons(False)  # Disable search buttons
 
-    def validate_isbn(self, isbn):
+    @staticmethod
+    def validate_isbn(isbn):
         """Validates the ISBN using regex and checksum validation, treating lowercase 'x' as 'X' for usability."""
         isbn = (
             isbn.replace("-", "").replace(" ", "").upper()
         )  # Remove dashes, spaces, and convert to uppercase
-        regex = re.compile(r"^(97(8|9))?\d{9}(\d|X)$")  # Match ISBN-10 or ISBN-13
+        regex = re.compile(r"^(97[89])?\d{9}[\dX]$")  # Match ISBN-10 or ISBN-13
 
         if not regex.match(isbn):
             return False
@@ -500,6 +501,8 @@ class Z3950SearchApp(QWidget):
 
         # Check ISBN-13
         elif len(isbn) == 13:
+            if 'X' in isbn:
+                return False  # ISBN-13 should not contain 'X'
             total = sum((1 if i % 2 == 0 else 3) * int(c) for i, c in enumerate(isbn))
             return total % 10 == 0
 
