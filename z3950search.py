@@ -468,6 +468,12 @@ class Z3950SearchApp(QWidget):
         self.prev_record_button.setEnabled(False)
         self.next_record_button.setEnabled(False)
 
+        # Check if a worker thread is already running and terminate it
+        if self.worker_thread and self.worker_thread.isRunning():
+            self.worker.cancel()
+            self.worker_thread.quit()
+            self.worker_thread.wait()
+
         self.worker = Worker(self.servers, query_type, query, start=1)
         self.worker.progress.connect(self.progress_bar.setValue)
         self.worker.log_message.connect(self.log)
