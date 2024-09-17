@@ -174,12 +174,6 @@
         "database": "INNOPAC"
     },
     {
-        "name": "Copac: UK & Irish National, Academic & Special Library catalogue",
-        "host": "z3950.copac.ac.uk",
-        "port": "210",
-        "database": "Default"
-    },
-    {
         "name": "Cornell University   (FOLIO)",
         "host": "z3950.folio.ebsco.com",
         "port": "2100",
