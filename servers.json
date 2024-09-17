@@ -546,30 +546,6 @@
         "database": "INNOPAC"
     },
     {
-        "name": "Missouri Bibliographic Information User System (MOBIUS) -- Archway Cluster   (INNOPAC)",
-        "host": "archway.missouri.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "Missouri Bibliographic Information User System (MOBIUS) -- Arthur Cluster   (INNOPAC)",
-        "host": "arthur.missouri.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "Missouri Bibliographic Information User System (MOBIUS) -- Quest Cluster   (INNOPAC)",
-        "host": "quest.missouri.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "Missouri Bibliographic Information User System (MOBIUS) -- Swan Cluster   (INNOPAC)",
-        "host": "swan.missouri.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
         "name": "Missouri River Regional Library -- Jefferson City, MO   (INNOPAC)",
         "host": "catalog.mrrl.org",
         "port": "210",
