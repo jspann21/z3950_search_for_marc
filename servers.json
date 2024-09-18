@@ -1,1178 +1,2606 @@
 [
     {
-        "name": "Library of Congress -- Washington, DC",
-        "host": "z3950.loc.gov",
-        "port": "7090",
-        "database": "Voyager"
+        "name": "AarhusKarlshamn Sweden AB",
+        "host": "z3950.libris.kb.se",
+        "port": "210",
+        "database": "libr",
+        "location": "Worldwide"
+    },
+    {
+        "name": "ABES (Fr.)",
+        "host": "carmin.sudoc.abes.fr",
+        "port": "10646",
+        "database": "abes-z39-public",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Abilene Christian University (Tex.)",
+        "host": "vmvm.alc.org",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "Abilene Library Consortium -- Texas   (SirsiDynix)",
         "host": "vmvm.alc.org",
         "port": "2200",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
         "name": "Academica Sinica -- Taiwan   (INNOPAC)",
         "host": "las.sinica.edu.tw",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Adams State College (Colo.)",
+        "host": "192.245.61.175",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Agencia Espanola de Cooperacion Internacional",
+        "host": "rebiun.crue.org",
+        "port": "210",
+        "database": "absysrebiun",
+        "location": "USA"
+    },
+    {
+        "name": "Air Force Institute of Technology (Ohio)",
+        "host": "olc1.ohiolink.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Alaska Resources Library and Information Service",
+        "host": "137.229.138.110",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Alberta Bible",
+        "host": "67.220.127.157",
+        "port": "210",
+        "database": "salt",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Alberta Geological Survey",
+        "host": "ualapp.library.ualberta.ca",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Albion College (Mich.)",
+        "host": "elibrary.mel.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Alliant International University (Calif.)",
+        "host": "csul.iii.com",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "American University (Alma)",
         "host": " na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_AMU"
+        "database": "01WRLC_AMU",
+        "location": "USA"
     },
     {
-        "name": "Angelo State University -- San Angelo, TX   (Voyager)",
+        "name": "American University in Cairo (Egypt)",
+        "host": "lib.aucegypt.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Angelo State University (Tex.)",
         "host": "phl.angelo.edu",
         "port": "7090",
-        "database": "VOYAGER"
+        "database": "voyager",
+        "location": "USA"
+    },
+    {
+        "name": "Appalachian State University (N.C.)",
+        "host": "wncln.wncln.org",
+        "port": "210",
+        "database": "innopac:asu",
+        "location": "USA"
     },
     {
         "name": "Appalachian State University -- Boone, NC   (INNOPAC)",
         "host": "wncln.wncln.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "Arkansas Studies Institute -- Little Rock, AR   (INNOPAC)",
+        "name": "Arkansas Studies Institute",
         "host": "vera.cals.lib.ar.us",
         "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "Aspen School District -- Aspen, CO   (INNOPAC)",
-        "host": "192.245.61.175",
-        "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Auburn University   (Voyager)",
         "host": "pooh.lib.auburn.edu",
         "port": "7090",
-        "database": "VOYAGER"
+        "database": "VOYAGER",
+        "location": "USA"
+    },
+    {
+        "name": "Auburn University (Ala.)",
+        "host": "pooh.lib.auburn.edu",
+        "port": "7290",
+        "database": "voyager",
+        "location": "USA"
     },
     {
         "name": "Aurora Public Library -- Aurora, CO   (INNOPAC)",
         "host": "odyssey.aurora.lib.co.us",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "Azusa Pacific University -- Azusa, CA   (INNOPAC)",
-        "host": "csul.iii.com",
-        "port": "210",
-        "database": "INNOPAC"
+        "name": "Austin College (Tex.)",
+        "host": "galileo.sirsi.net",
+        "port": "2200",
+        "database": "auco",
+        "location": "USA"
     },
     {
         "name": "Bangor University -- North Wales   (Alma)",
         "host": "eu.alma.exlibrisgroup.com",
         "port": "210",
-        "database": "44WHELF_BANG"
+        "database": "44WHELF_BANG",
+        "location": "USA"
+    },
+    {
+        "name": "Bashkir State University (Rus.)",
+        "host": "62.76.8.149",
+        "port": "210",
+        "database": "books",
+        "location": "Worldwide"
     },
     {
         "name": "Baton Rouge Community College   (SirsiDynix)",
         "host": "brcc.louislibraries.org",
         "port": "5805",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
-        "name": "Bossier Parish Community College -- North Bossier City, LA   (SirsiDynix)",
+        "name": "Biblioteca Nazionale Centrale di Firenze (Ital.)",
+        "host": "opac.sbn.it",
+        "port": "2100",
+        "database": "nopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Bibliotekenes IT-senter AS",
+        "host": "sok.bibits.no",
+        "port": "210",
+        "database": "stami",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Bibliotheque et Archives nationales du Quebec",
+        "host": "catalogue.banq.qc.ca",
+        "port": "210",
+        "database": "iris",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Bibliotheque Nationale du Quebec",
+        "host": "www.biblinat.gouv.qc.ca",
+        "port": "210",
+        "database": "iris",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Bossier Parish Community College (La.)",
         "host": "bpcc.louislibraries.org",
         "port": "6205",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "Boston Public Library   (Horizon)",
+        "name": "Boston Public Library (Mass.)",
         "host": "catalog.mbln.org",
         "port": "210",
-        "database": "horizon"
+        "database": "horizon",
+        "location": "USA"
     },
     {
-        "name": "Brooklyn Public Library -- Brooklyn, NY   (INNOPAC)",
+        "name": "Boulder Public Library (Colo.)",
+        "host": "prospector.coalliance.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Bowie State University (Md.)",
+        "host": "alephprod.umd.edu",
+        "port": "210",
+        "database": "gl",
+        "location": "USA"
+    },
+    {
+        "name": "Brigham Young University (Utah)",
+        "host": "z3950.lib.byu.edu",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "British Columbia Institute of Technology",
+        "host": "innopac.lib.bcit.ca",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Brooklyn Public Library (N.Y.)",
         "host": "catalog.brooklynpubliclibrary.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "California Judicial Center Library -- San Francisco, CA   (INNOPAC)",
+        "name": "Bulgarian Academy of Sciences",
+        "host": "aleph.cl.bas.bg",
+        "port": "9991",
+        "database": "clbas_t",
+        "location": "Worldwide"
+    },
+    {
+        "name": "California Judicial Center Library",
         "host": "cjcl.iii.com",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "California State Library   (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
         "name": "Canton Public Library -- Canton, MI   (INNOPAC)",
         "host": "catalog.cantonpl.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
         "name": "Capilano University -- Vancouver, BC, Canada   (INNOPAC)",
         "host": "webpac.capilanou.ca",
         "port": "210",
-        "database": "Default"
+        "database": "Default",
+        "location": "Worldwide"
     },
     {
-        "name": "Capitol Area District Library -- Lansing, MI   (INNOPAC)",
+        "name": "Capital Area District Library (Mich.)",
         "host": "opac.cadl.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Carleton University -- Ottawa, Canada   (Alma)",
         "host": "ocul-crl.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01OCUL_CRL"
+        "database": "01OCUL_CRL",
+        "location": "USA"
+    },
+    {
+        "name": "Carlsbad City Library (Calif.)",
+        "host": "cbcl.sirsi.net",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Carrollton Public Library (Tex.)",
+        "host": "innovative.cityofcarrollton.com",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Catholic University -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_CAA"
+        "database": "01WRLC_CAA",
+        "location": "USA"
     },
     {
-        "name": "Central European University -- Budapest, Hungary   (INNOPAC)",
+        "name": "Central European University (Hun.)",
         "host": "goya.ceu.hu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Christopher Newport University -- Newport News, VA   (INNOPAC)",
+        "name": "Champlain College (Vt.)",
+        "host": "library.champlain.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Christopher Newport University (Va.)",
         "host": "read.cnu.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Cobb County Library -- Marietta, GA   (SirsiDynix)",
+        "name": "City University London (U.K.)",
+        "host": "library.city.ac.uk",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Classiques Garnier (Fr.)",
+        "host": "classiques-garnier.com",
+        "port": "210",
+        "database": "classiques-garnier",
+        "location": "USA"
+    },
+    {
+        "name": "Cobb County Library (Ga.)",
         "host": "viking.sirsi.net",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "Colgate University -- Hamilton, NY   (INNOPAC)",
+        "name": "Colgate University (N.Y.)",
         "host": "library.colgate.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "College of Saint Rose -- Albany, NY   (Voyager)",
+        "name": "College of Saint Rose (N.Y.)",
         "host": "libdb.strose.edu",
         "port": "7090",
-        "database": "VOYAGER"
-    },
-    {
-        "name": "Colorado Unified Catalog -- Prospector   (INNOPAC)",
-        "host": "prospector.coalliance.org",
-        "port": "210",
-        "database": "INNOPAC"
+        "database": "voyager",
+        "location": "USA"
     },
     {
         "name": "Cornell University   (FOLIO)",
         "host": "z3950.folio.ebsco.com",
         "port": "2100",
-        "database": "cornell"
+        "database": "cornell",
+        "location": "USA"
     },
     {
         "name": "Cornerstone College -- Grand Rapids, MI   (INNOPAC)",
         "host": "eaglelink.cornerstone.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
         "name": "Corporacion Universitaria Rafael Nunez, Colombia (Koha)",
         "host": "167.249.40.219",
         "port": "9998",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
-        "name": "Delgado Community College -- New Orleans, LA   (SirsiDynix)",
+        "name": "DanBib",
+        "host": "z3950.dbc.dk",
+        "port": "210",
+        "database": "danbib",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Deakin University (Australia)",
+        "host": "library.deakin.edu.au",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Delgado Community College (La.)",
         "host": "delgado.louislibraries.org",
         "port": "7005",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "District of Columbia Public Library   (SirsiDynix)",
+        "name": "Dickinson School of Law (Penn.)",
+        "host": "cat.libraries.psu.edu",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "District of Columbia Public Library",
         "host": "citycat.dclibrary.org",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "Dublin Institute of Technology   (INNOPAC)",
         "host": "library.dit.ie",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "Worldwide"
     },
     {
-        "name": "El Paso Community College -- El Paso, TX   (INNOPAC)",
+        "name": "Duke University (N.C.)",
+        "host": "catalog.library.duke.edu",
+        "port": "9991",
+        "database": "duk01",
+        "location": "USA"
+    },
+    {
+        "name": "Durham University (U.K.)",
+        "host": "library.dur.ac.uk",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "El Paso Community College (Tex.)",
         "host": "lib.epcc.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "ELNET  Consortium -- Estonia (INNOPAC)",
         "host": "ester.ester.ee",
         "port": "210",
-        "database": "Default"
+        "database": "Default",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Emerson College (Mass.)",
+        "host": "endeavor.flo.org",
+        "port": "7090",
+        "database": "voyager",
+        "location": "USA"
+    },
+    {
+        "name": "Emory & Henry College (Va.)",
+        "host": "www.hal.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Emory University   (Alma)",
         "host": "na03.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
         "name": "Encyclopaedia Britannica Online   (Crossnet)",
         "host": "z3950.eb.com",
         "port": "210",
-        "database": "XXDEFAULT"
+        "database": "XXDEFAULT",
+        "location": "USA"
     },
     {
         "name": "Enoch Pratt Free Library -- Baltimore, MD   (SirsiDynix)",
         "host": "pac.epfl.net",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
-        "name": "Feng Chia University -- Taiwan   (INNOPAC)",
+        "name": "Erudit",
+        "host": "z3950.erudit.org",
+        "port": "210",
+        "database": "erudit",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Feng Chia University (Taiwan)",
         "host": "innopac.lib.fcu.edu.tw",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Fenway Libraries Online -- Boston, MA   (Voyager)",
-        "host": "endeavor.flo.org",
-        "port": "7090",
-        "database": "VOYAGER"
+        "name": "FIS-Bildung",
+        "host": "www.fachportal-paedagogik.de",
+        "port": "210",
+        "database": "fis",
+        "location": "Worldwide"
     },
     {
-        "name": "Fletcher Technical Community College -- Houma, LA   (SirsiDynix)",
+        "name": "Fletcher Technical Community College (La.)",
         "host": "fletcher.louislibraries.org",
         "port": "8205",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Franklin University (Ohio)",
+        "host": "olinkserver.franklin.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Fraser Valley Regional Library (B.C.)",
+        "host": "catalogue.fvrl.bc.ca",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Fu Jen Catholic University (Taiwan)",
+        "host": "library.lib.fju.edu.tw",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Gail Borden Public Library District (Ill.)",
+        "host": "innovative.gailborden.info",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "bper",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "afam",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "brc",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ebnn",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "gau",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "brip",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "eba",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "clc",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "eaim",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "grgm",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "bim",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "grcm",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "hrca",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "aim",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ecco",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "bri",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "aone",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "hwra",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "cpi",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ca",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "dcol",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "cdb",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ifme",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "itof",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "itke",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "jrc1",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "lt",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "mla",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "mome",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "moml",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ovrc",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "scirc",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ncnp",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "src-1",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "sto",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "srcce-1",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "prof",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "scrb",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "wdrn",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "sabn",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "src-3",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "src-2",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "shax",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "zlrc",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "ttda",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "stoj",
+        "location": "USA"
+    },
+    {
+        "name": "Gale",
+        "host": "z3950.iacenter.com",
+        "port": "210",
+        "database": "nni",
+        "location": "USA"
     },
     {
         "name": "Gallaudet University -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_GAL"
+        "database": "01WRLC_GAL",
+        "location": "USA"
+    },
+    {
+        "name": "Genesee District Library (Mich.)",
+        "host": "library.thegdl.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "George Mason University -- VA (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_GML"
-    },
-    {
-        "name": "Georgetown University -- Washington, DC (Alma)",
-        "host": "na04.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "01WRLC_GUNIV"
-    },
-    {
-        "name": "Georgetown Law -- Washington, DC (Alma)",
-        "host": "na04.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "01WRLC_GUNIVLAW"
+        "database": "01WRLC_GML",
+        "location": "USA"
     },
     {
         "name": "George Washington University -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_GWA"
+        "database": "01WRLC_GWA",
+        "location": "USA"
     },
     {
-        "name": "GW Health University -- Washington, DC (Alma)",
+        "name": "Georgetown Law -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_GWAHLTH"
+        "database": "01WRLC_GUNIVLAW",
+        "location": "USA"
     },
     {
-        "name": "GW Law University -- Washington, DC (Alma)",
+        "name": "Georgetown University -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_GWALAW"
+        "database": "01WRLC_GUNIV",
+        "location": "USA"
     },
     {
         "name": "Getty Research Institute Los Angeles, CA (Alma)",
         "host": "na01.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
-        "name": "Grambling State University -- Grambling, LA   (SirsiDynix)",
+        "name": "Gloucester Lyceum (Mass.)",
+        "host": "catalog.noblenet.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Grambling State University (La.)",
         "host": "grambling.louislibraries.org",
         "port": "6305",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "GW Health University -- Washington, DC (Alma)",
+        "host": "na04.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01WRLC_GWAHLTH",
+        "location": "USA"
+    },
+    {
+        "name": "GW Law University -- Washington, DC (Alma)",
+        "host": "na04.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01WRLC_GWALAW",
+        "location": "USA"
+    },
+    {
+        "name": "hbz-Verbund (Ger.)",
+        "host": "193.30.112.135",
+        "port": "9991",
+        "database": "hbz01",
+        "location": "USA"
+    },
+    {
+        "name": "Holland College (P.E.I.)",
+        "host": "library.hollandc.pe.ca",
+        "port": "210",
+        "database": "horizon",
+        "location": "Worldwide"
     },
     {
         "name": "Howard University -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_HOW"
+        "database": "01WRLC_HOW",
+        "location": "USA"
     },
     {
-        "name": "Hull University -- UK   (INNOPAC)",
+        "name": "Hull University (U.K.)",
         "host": "library.hull.ac.uk",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Indiana University  (SirsiDynix)",
+        "name": "Indiana University",
         "host": "libprd.uits.indiana.edu",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "Indiana Wesleyan University -- Marion, IN   (INNOPAC)",
+        "name": "Indiana Wesleyan University",
         "host": "oak.indwes.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Institucian universitaria mayor de Cartagena (Colombia) (biblios)",
         "host": "biblioteca-catalogo.umayor.edu.co",
         "port": "9999",
-        "database": "Default"
+        "database": "Default",
+        "location": "Worldwide"
     },
     {
-        "name": "Instituto Tecnologico y de Estudios Superiores de Monterrey--Monterrey, Mexico   (INNOPAC)",
+        "name": "Institute of Education (U.K.)",
+        "host": "206.187.52.22",
+        "port": "7819",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Instituto Tecnologico y de Estudios Superiores de Monterrey",
         "host": "itec.mty.itesm.mx",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Italian National Library Service - SBN Servizio Bibliotecario Nazionale  (ICCU)",
-        "host": "opac.sbn.it",
-        "port": "2100",
-        "database": "nopac"
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "britbackz",
+        "location": "USA"
     },
     {
-        "name": "Jacksonville State University -- Jacksonville, AL   (Voyager)",
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "conraz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "last5z",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "efsearsz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "conspz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "filipinianaz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "frenchz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "britishz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "canmarcz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "lccurrentz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "avaccessz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "lcforeignz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "docufilez",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "lcbackfilez",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "medmarcz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "newpubmarcz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "qualitymarcz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "schoolmarclcz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "spanishz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "searsz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "nicemz",
+        "location": "USA"
+    },
+    {
+        "name": "ITS.MARC",
+        "host": "z3950.itsmarc.com",
+        "port": "5666",
+        "database": "theomarcz",
+        "location": "USA"
+    },
+    {
+        "name": "Jacksonville State University (Ala.)",
         "host": "library.jsu.edu",
         "port": "7090",
-        "database": "VOYAGER"
+        "database": "voyager",
+        "location": "USA"
     },
     {
-        "name": "Jefferson-Madison Regional Library -- Charlottesville, VA   (INNOPAC)",
+        "name": "Jefferson-Madison Regional Library (Va.)",
         "host": "aries.jmrl.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Johns Hopkins University (Md.)",
+        "host": "z3950.muse.jhu.edu",
+        "port": "210",
+        "database": "muse",
+        "location": "USA"
     },
     {
         "name": "Kansas City Public Library   (SirsiDynix)",
         "host": "KCMO.SIRSI.NET",
         "port": "2500",
-        "database": "MARION"
+        "database": "MARION",
+        "location": "USA"
     },
     {
-        "name": "Keene State College -- Keene, NH   (INNOPAC)",
+        "name": "Kansas City Public Library (Mo.)",
+        "host": "kcmo.sirsi.net",
+        "port": "2500",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Keene State College (N.H.)",
         "host": "ksclib.keene.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "King County Library System (Wash.)",
+        "host": "catalog.kcls.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "King County Library System -- Issaquah, WA",
         "host": "catalog.kcls.org",
         "port": "210",
-        "database": "kcls"
+        "database": "kcls",
+        "location": "USA"
     },
     {
-        "name": "Koc00e7 University -- Istanbul, Turkey   (INNOPAC)",
+        "name": "Koc University (Turk.)",
         "host": "libunix.ku.edu.tr",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Le Moyne College -- Syracuse, NY   (INNOPAC)",
+        "name": "Le Moyne College (N.Y.)",
         "host": "library.lemoyne.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Legislative Assembly of Ontario",
+        "host": "lois.ontla.on.ca",
+        "port": "7090",
+        "database": "voyager",
+        "location": "Worldwide"
     },
     {
         "name": "Libraries Online Inc. (LION) -- Connecticut   (INNOPAC)",
         "host": "catalog.lioninc.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "LIBRIS -- Swedish Union Catalog",
-        "host": "z3950.libris.kb.se",
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
         "port": "210",
-        "database": "LIBR"
+        "database": "saf",
+        "location": "USA"
     },
     {
-        "name": "Link+ Consortium -- California and Nevada   (INNOPAC)",
-        "host": "csul.iii.com",
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "hlas",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "naf",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "lcdb",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress -- Washington, DC",
+        "host": "z3950.loc.gov",
+        "port": "7090",
+        "database": "Voyager",
+        "location": "USA"
     },
     {
         "name": "Livermore Public Library -- Livermore, CA   (INNOPAC)",
         "host": "www.livermore.lib.ca.us",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
         "name": "London Metropolitan University   (INNOPAC)",
         "host": "catalogue.londonmet.ac.uk",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "Worldwide"
     },
     {
-        "name": "London Public Library -- London, ON, Canada   (INNOPAC)",
+        "name": "London Public Library (Ont.)",
         "host": "catalogue.londonpubliclibrary.ca",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Louisiana State University   (SirsiDynix)",
+        "name": "Louisiana Delta Community College",
+        "host": "delta.louislibraries.org",
+        "port": "8305",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Louisiana State University",
         "host": "lsu.louislibraries.org",
         "port": "5205",
-        "database": "UNICORN"
-    },
-    {
-        "name": "Louisiana State University--Alexandria   (SirsiDynix)",
-        "host": "lsua.louislibraries.org",
-        "port": "6905",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "Louisiana State University Center for Energy Studies   (SirsiDynix)",
         "host": "lsuces.louislibraries.org",
         "port": "5905",
-        "database": "UNICORN"
-    },
-    {
-        "name": "Louisiana State University--Eunice   (SirsiDynix)",
-        "host": "lsue.louislibraries.org",
-        "port": "7105",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
         "name": "Louisiana State University Law Center   (SirsiDynix)",
         "host": "lsulaw.louislibraries.org",
         "port": "5305",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
+    },
+    {
+        "name": "Louisiana State University--Alexandria   (SirsiDynix)",
+        "host": "lsua.louislibraries.org",
+        "port": "6905",
+        "database": "UNICORN",
+        "location": "USA"
+    },
+    {
+        "name": "Louisiana State University--Eunice   (SirsiDynix)",
+        "host": "lsue.louislibraries.org",
+        "port": "7105",
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
         "name": "Louisiana State University--Shreveport   (SirsiDynix)",
         "host": "lsus.louislibraries.org",
         "port": "6405",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
-        "name": "Louisiana Tech University -- Ruston, LA   (SirsiDynix)",
+        "name": "Louisiana State University-Medical Center",
+        "host": "innopac.lsuhsc.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Louisiana Tech University",
         "host": "latech.louislibraries.org",
         "port": "6505",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "Louisiana Universities Marine Consortium   (SirsiDynix)",
+        "name": "Louisiana Universities Marine Consortium",
         "host": "lumcon.louislibraries.org",
         "port": "7205",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "McNeese State University -- Lake Charles, LA   (SirsiDynix)",
-        "host": "mcneese.louislibraries.org",
-        "port": "6105",
-        "database": "UNICORN"
+        "name": "Luther Rice",
+        "host": "lutherrice.bywatersolutions.com",
+        "port": "9968",
+        "database": "biblios",
+        "location": "USA"
     },
     {
-        "name": "Margate Public Library -- Margate, NJ   (INNOPAC)",
+        "name": "Malmo hogskola (Swed.)",
+        "host": "vega.bit.mah.se",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Margate Public Library (N.J.)",
         "host": "catalog.margatelibrary.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "MARMOT Library Network -- Western Colorado   (INNOPAC)",
         "host": "192.245.61.175",
         "port": "210",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
-        "name": "Marquette University -- Milwaukee, WI   (INNOPAC)",
+        "name": "Marquette University (Wis.)",
         "host": "libus.csd.mu.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Marshall University -- Huntington, WV   (INNOPAC)",
+        "name": "Marshall University (W.Va.)",
         "host": "mulibiiidb.marshall.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Marymount University  (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_MAR"
+        "database": "01WRLC_MAR",
+        "location": "USA"
     },
     {
-        "name": "Mayo Clinic Libraries   (INNOPAC)",
+        "name": "Masaryk University (Czech Rep.)",
+        "host": "aleph.muni.cz",
+        "port": "9991",
+        "database": "mub01z",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Mayo Clinic (Minn.)",
         "host": "mayo.iii.com",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Merlin Library Catalog -- Northern Wisconsin   (INNOPAC)",
+        "name": "McNeese State University (La.)",
+        "host": "mcneese.louislibraries.org",
+        "port": "6105",
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Melbourne Business School (Australia)",
+        "host": "cat.lib.unimelb.edu.au",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Merlin (Wisc.)",
         "host": "merlin.nwls.lib.wi.us",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Metro Boston Library Network   (Dynix)",
-        "host": "catalog.mbln.org",
-        "port": "210",
-        "database": "Horizon"
-    },
-    {
-        "name": "Metropolitan Museum of Art -- New York, NY   (INNOPAC)",
+        "name": "Metropolitan Museum of Art (N.Y.)",
         "host": "library.metmuseum.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Missouri Bibliographic Information User System (MOBIUS)-MERLIN Cluster",
+        "host": "merlin.mobius.umsystem.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Missouri River Regional Library -- Jefferson City, MO   (INNOPAC)",
         "host": "catalog.mrrl.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "Moore College of Art and Design -- Philadelphia, PA   (INNOPAC)",
+        "name": "Monroe County Public Library (Ind.)",
+        "host": "mcpl.monroe.lib.in.us",
+        "port": "210",
+        "database": "pac",
+        "location": "USA"
+    },
+    {
+        "name": "Moore College of Art & Design (Penn.)",
         "host": "library.moore.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Moravskc00e1 zemskc00e1 knihovna v Brnc011b -- Brno, Czech Republic   (Aleph)",
+        "name": "Moravska zemska knihovna v Brne (Czech.)",
         "host": "aleph.mzk.cz",
         "port": "9991",
-        "database": "mzk01"
+        "database": "mzk01",
+        "location": "Worldwide"
     },
     {
-        "name": "MORE Consortium -- Western Wisconsin   (INNOPAC)",
+        "name": "MORE Consortium (Wisc.)",
         "host": "www.more.lib.wi.us",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "National Library of Finland. Fennica   (Alma)",
         "host": "z3950.api.melinda.kansalliskirjasto.fi",
         "port": "210",
-        "database": "fin01"
+        "database": "fin01",
+        "location": "Worldwide"
     },
     {
         "name": "National Library of New Zealand (Alma)",
         "host": " ap01.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "64NLNZ_MAIN"
+        "database": "64NLNZ_MAIN",
+        "location": "USA"
     },
     {
-        "name": "National Library of the Czech Republic   (Aleph)",
+        "name": "National Library of the Czech Republic",
         "host": "aleph.nkp.cz",
         "port": "9991",
-        "database": "skc-utf"
+        "database": "skc-utf",
+        "location": "Worldwide"
     },
     {
-        "name": "National University of Singapore   (INNOPAC)",
+        "name": "National Library of the Czech Republic",
+        "host": "aleph.nkp.cz",
+        "port": "9991",
+        "database": "anl-utf",
+        "location": "Worldwide"
+    },
+    {
+        "name": "National Library of the Czech Republic",
+        "host": "aleph.nkp.cz",
+        "port": "9991",
+        "database": "stt-utf",
+        "location": "Worldwide"
+    },
+    {
+        "name": "National Library of the Czech Republic",
+        "host": "aleph.nkp.cz",
+        "port": "9991",
+        "database": "cnb-utf",
+        "location": "Worldwide"
+    },
+    {
+        "name": "National Library Service for the Blind and Physically Handicapped",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "nlsbph",
+        "location": "USA"
+    },
+    {
+        "name": "National Szechenyi Library (Hun.)",
+        "host": "amicus.oszk.hu",
+        "port": "1616",
+        "database": "any",
+        "location": "Worldwide"
+    },
+    {
+        "name": "National University of Singapore",
         "host": "linc.nus.edu.sg",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
-        "name": "Nelson Mandela Metropolitan University -- Port Elizabeth, South Africa   (INNOPAC)",
+        "name": "Natural Resources Canada",
+        "host": "geoscan.ess.nrcan.gc.ca",
+        "port": "210",
+        "database": "geoscanz39",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Natural Resources Canada",
+        "host": "geoscan.ess.nrcan.gc.ca",
+        "port": "210",
+        "database": "resors",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Nelson Mandela Metropolitan University (South Africa)",
         "host": "opac.seals.ac.za",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
         "name": "NEOS Consortium -- University of Alberta   (SirsiDynix)",
         "host": "ualapp.library.ualberta.ca",
         "port": "2200",
-        "database": "MARION"
+        "database": "MARION",
+        "location": "Worldwide"
     },
     {
-        "name": "New Canaan Library -- New Canaan, CT   (INNOPAC)",
+        "name": "New Canaan Library (Conn.)",
         "host": "catalog.newcanaanlibrary.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "New Westminster Public Library (B.C.)",
+        "host": "hip.nwpl.ca",
+        "port": "210",
+        "database": "horizon",
+        "location": "Worldwide"
     },
     {
         "name": "New York University Law Library   (INNOPAC)",
         "host": "julius.law.nyu.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "Nicholls State University -- Thibodaux, LA   (SirsiDynix)",
+        "name": "Nicholls State University (La.)",
         "host": "nicholls.louislibraries.org",
         "port": "7305",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "North Carolina State University",
+        "host": "sirsi.lib.ncsu.edu",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "North Carolina Western Database   (INNOPAC)",
         "host": "wncln.appstate.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "North Carolina State University   (SirsiDynix)",
-        "host": "sirsi.lib.ncsu.edu",
-        "port": "2200",
-        "database": "UNICORN"
-    },
-    {
-        "name": "Northern Waters Library Service -- Northern Wisconsin   (INNOPAC)",
-        "host": "merlin.nwls.lib.wi.us",
-        "port": "210",
-        "database": "INNOPAC"
+        "name": "Northwestern State University (La.)",
+        "host": "nsula.louislibraries.org",
+        "port": "6605",
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "Northwestern University  (Alma)",
         "host": " northwestern.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01NWU_INST"
+        "database": "01NWU_INST",
+        "location": "USA"
     },
     {
-        "name": "Northwestern State University of Louisiana -- Natchitoches, LA   (SirsiDynix)",
-        "host": "nsula.louislibraries.org",
-        "port": "6605",
-        "database": "UNICORN"
-    },
-    {
-        "name": "Norwalk Public Library -- Norwalk, CT   (INNOPAC)",
+        "name": "Norwalk Public Library (Conn.)",
         "host": "catalog.norwalklib.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Norwegian Library System (Alma)",
         "host": "bibsys.alma.exlibrisgroup.com",
         "port": "210",
-        "database": "47BIBSYS_NB"
+        "database": "47BIBSYS_NB",
+        "location": "USA"
     },
     {
-        "name": "Nunez Community College -- Chalmette, LA   (SirsiDynix)",
+        "name": "Nunez Community College (La.)",
         "host": "nunez.louislibraries.org",
         "port": "7405",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "Oakland Public Library -- Oakland, CA   (INNOPAC)",
+        "name": "Oakland Public Library (Calif.)",
         "host": "catalog.oaklandlibrary.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Ocean City Public Library -- Ocean City, NJ   (INNOPAC)",
         "host": "catalog.oceancitylibrary.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "OhioLINK Central       Catalog   (INNOPAC)",
-        "host": "olc1.ohiolink.edu",
+        "name": "Orange County Library System (Fla.)",
+        "host": "iii.ocls.info",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Ontario Legislative Library   (Voyager)",
-        "host": "lois.ontla.on.ca",
-        "port": "7090",
-        "database": "VOYAGER"
-    },
-    {
-        "name": "Orange County Public Law Library -- Santa Ana, CA   (INNOPAC)",
-        "host": "innopac.ocpll.org",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "Our Lady of the Lake College -- Baton Rouge, LA   (SirsiDynix)",
+        "name": "Our Lady of the Lake College (La.)",
         "host": "olol.louislibraries.org",
         "port": "7505",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "Oxford University   (Aleph)",
         "host": "library.ox.ac.uk",
         "port": "210",
-        "database": "ADVANCE"
+        "database": "ADVANCE",
+        "location": "Worldwide"
     },
     {
         "name": "Pennsylvania State University (SirsiDynix)",
         "host": "zcat.libraries.psu.edu",
         "port": "2200",
-        "database": "CATALOG"
+        "database": "CATALOG",
+        "location": "USA"
+    },
+    {
+        "name": "Pima County Public Library (Ariz.)",
+        "host": "librarycatalog.pima.gov",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Pioneerland Library System (Minn.)",
+        "host": "iii.pioneerland.lib.mn.us",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Pratt Institute (N.Y.)",
+        "host": "prattcat.pratt.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Princeton Theological Seminary",
+        "host": "catalog.ptsem.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Princeton University     (Alma)",
         "host": "princeton.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
+    },
+    {
+        "name": "Ramkhamhaeng University (Thai.)",
+        "host": "library.lib.ru.ac.th",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
         "name": "Red Deer Public Library -- Red Deer, AB Canada   (SirsiDynix)",
         "host": "207.34.102.21",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
-        "name": "River Parishes Community College -- Sorrento, LA   (SirsiDynix)",
+        "name": "Ridley College (Australia)",
+        "host": "library.ridley.edu.au",
+        "port": "210",
+        "database": "horizon",
+        "location": "Worldwide"
+    },
+    {
+        "name": "River Parishes Community College (La.)",
         "host": "rpcc.louislibraries.org",
         "port": "5705",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "Rivier College (N.H.)",
+        "host": "lib.rivier.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "RMIT University (Australia)",
+        "host": "ap01.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "61rmit_inst",
+        "location": "USA"
     },
     {
         "name": "Rochester Institute of Technology   (INNOPAC)",
         "host": "albert.rit.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "Russian State Library -- Moscow   (Aleph)",
+        "name": "Russian State Library",
         "host": "aleph.rsl.ru",
         "port": "9909",
-        "database": "RSL01"
+        "database": "rsl01",
+        "location": "Worldwide"
     },
     {
         "name": "Rutgers University  -- New Jersey (Alma)",
         "host": " na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01RUT_INST"
+        "database": "01RUT_INST",
+        "location": "USA"
     },
     {
         "name": "Ryerson Polytechnic University -- Toronto, ON Canada   (INNOPAC)",
         "host": "innopac.lib.ryerson.ca",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "Worldwide"
     },
     {
-        "name": "Sabanci University -- Istanbul, Turkey   (INNOPAC)",
+        "name": "Sabanc University (Turk.)",
         "host": "risc01.sabanciuniv.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Sacramento Public Library   (INNOPAC)",
         "host": "www.saclibrarycatalog.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "Saginaw Valley State University -- University Center, MI   (INNOPAC)",
+        "name": "Saginaw Valley State University (Mich.)",
         "host": "library.svsu.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Saint Anselm College -- Manchester, NH   (INNOPAC)",
         "host": "library.anselm.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "St. Louis County Public Library -- St. Louis, MO   (INNOPAC)",
-        "host": "webpac.slcl.org",
-        "port": "210",
-        "database": "INNOPAC"
+        "name": "Sam Houston State University (Tex.)",
+        "host": "unicorn.shsu.edu",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "St. Mary's University -- San Antonio, TX   (INNOPAC)",
-        "host": "regina.stmarytx.edu",
+        "name": "Samford University (Ala.)",
+        "host": "library3.samford.edu",
         "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "St. Paul Public Library   (INNOPAC)",
-        "host": "alpha.stpaul.lib.mn.us",
-        "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "San Francisco Public Library   (INNOPAC)",
         "host": "sflib1.sfpl.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "San Jacinto College (Tex.)",
+        "host": "libcat.sanjac.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "San Jose Public Library -- San Jose, CA   (INNOPAC)",
         "host": "catalog.sjlibrary.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
-        "name": "South Louisiana Community College -- Lafayette, LA   (SirsiDynix)",
+        "name": "Santa Clara City Library (Calif.)",
+        "host": "sccl.santaclaraca.gov",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Smithsonian Institution",
+        "host": "siris-archives.si.edu",
+        "port": "210",
+        "database": "default",
+        "location": "USA"
+    },
+    {
+        "name": "Smithsonian Institution",
+        "host": "siris-artexhibition.si.edu",
+        "port": "210",
+        "database": "default",
+        "location": "USA"
+    },
+    {
+        "name": "Smithsonian Institution",
+        "host": "siris-artinventories.si.edu",
+        "port": "210",
+        "database": "default",
+        "location": "USA"
+    },
+    {
+        "name": "Smithsonian Institution",
+        "host": "siris-bibliographies.si.edu",
+        "port": "210",
+        "database": "default",
+        "location": "USA"
+    },
+    {
+        "name": "Smithsonian Institution",
+        "host": "siris-libraries.si.edu",
+        "port": "210",
+        "database": "default",
+        "location": "USA"
+    },
+    {
+        "name": "Smithsonian Institution",
+        "host": "siris-sihistory.si.edu",
+        "port": "210",
+        "database": "default",
+        "location": "USA"
+    },
+    {
+        "name": "Social Law Library (Mass.)",
+        "host": "catalog.socialaw.com",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "South Louisiana Community College",
         "host": "slcc.louislibraries.org",
         "port": "7605",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
-        "name": "Southeastern Louisiana University   (SirsiDynix)",
+        "name": "Southeastern Louisiana University",
         "host": "slu.louislibraries.org",
         "port": "5405",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "Southern University -- Baton Rouge, LA   (SirsiDynix)",
         "host": "subr.louislibraries.org",
         "port": "6005",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
         "name": "Southern University Law Center -- Baton Rouge, LA   (SirsiDynix)",
         "host": "sulaw.louislibraries.org",
         "port": "5605",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
         "name": "Southern University--New Orleans   (SirsiDynix)",
         "host": "suno.louislibraries.org",
         "port": "7705",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
         "name": "Southern University--Shreveport/Bossier   (SirsiDynix)",
         "host": "susla.louislibraries.org",
         "port": "6705",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
     },
     {
-        "name": "Sowela Technical Community College--Lake Charles, LA   (SirsiDynix)",
+        "name": "Southwestern Law School (Calif.)",
+        "host": "library.swlaw.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Sowela Technical Community College (La.)",
         "host": "sowela.louislibraries.org",
         "port": "8105",
-        "database": "UNICORN"
+        "database": "unicorn",
+        "location": "USA"
+    },
+    {
+        "name": "St. Louis County Public Library -- St. Louis, MO   (INNOPAC)",
+        "host": "webpac.slcl.org",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "St. Mary's University -- San Antonio, TX   (INNOPAC)",
+        "host": "regina.stmarytx.edu",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "St. Paul Public Library   (INNOPAC)",
+        "host": "alpha.stpaul.lib.mn.us",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "State Library of South Australia",
+        "host": "www.catalog.slsa.sa.gov.au",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "State Library of Western Australia",
+        "host": "henrietta.slwa.wa.gov.au",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Stonehill College (Mass.)",
+        "host": "library.stonehill.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Supreme Court of Canada   (SirsiDynix)",
         "host": "suco.sirsidynix.net",
         "port": "2200",
-        "database": "Z3950S"
+        "database": "Z3950S",
+        "location": "USA"
+    },
+    {
+        "name": "Texas Christian University",
+        "host": "libz39.lib.tcu.edu",
+        "port": "9991",
+        "database": "tcu01pub",
+        "location": "USA"
     },
     {
         "name": "Trent University  (Alma)",
         "host": "ocul-tu.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01OCUL_TU"
+        "database": "01OCUL_TU",
+        "location": "USA"
     },
     {
         "name": "Trinity University -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_TRN"
-    },
-    {
-        "name": "Universidad del Magdalena -- Colombia   (Alma)",
-        "host": "descubridor.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "57uma_inst"
-    },
-    {
-        "name": "Universidad del Rosario, Colombia   (SirsiDynix)",
-        "host": "universitas.urosario.edu.co",
-        "port": "2200",
-        "database": "UNICORN"
-    },
-    {
-        "name": "University of Adelaide -- Australia   (Alma)",
-        "host": "ap01.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Alabama, Tuscaloosa  (Voyager)",
-        "host": "library.ua.edu",
-        "port": "7090",
-        "database": "VOYAGER"
-    },
-    {
-        "name": "University of Chicago  (Folio)",
-        "host": "uchicago-z3950.folio.indexdata.com",
-        "port": "210",
-        "database": "chicago"
-    },
-    {
-        "name": "University of Colorado, Colorado Springs   (INNOPAC)",
-        "host": "library.uccs.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "University of the District of Columbia -- Washington, DC (Alma)",
-        "host": "na04.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "01WRLC_DOC"
+        "database": "01WRLC_TRN",
+        "location": "USA"
     },
     {
         "name": "UDC Law -- Washington, DC (Alma)",
         "host": "na04.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01WRLC_DOCLAW"
+        "database": "01WRLC_DOCLAW",
+        "location": "USA"
     },
     {
-        "name": "University of Louisiana at Lafayette   (SirsiDynix)",
-        "host": "ull.louislibraries.org",
-        "port": "7805",
-        "database": "UNICORN"
-    },
-    {
-        "name": "University of Louisiana at Monroe   (SirsiDynix)",
-        "host": "ulm.louislibraries.org",
-        "port": "6805",
-        "database": "UNICORN"
-    },
-    {
-        "name": "University of Maryland   (Aleph)",
-        "host": "alephprod.umd.edu",
-        "port": "210",
-        "database": "CP"
-    },
-    {
-        "name": "University of Michigan--Dearborn   (INNOPAC)",
-        "host": "wizard.umd.umich.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "University of Minnesota--Twin Cities   (Aleph)",
-        "host": "na01.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "01UMN_INST"
-    },
-    {
-        "name": "University of Missouri   (INNOPAC)",
-        "host": "merlin.mobius.umsystem.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "University of New Orleans   (SirsiDynix)",
-        "host": "uno.louislibraries.org",
-        "port": "5505",
-        "database": "UNICORN"
-    },
-    {
-        "name": "University of North Carolina at Chapel Hill   (INNOPAC)",
-        "host": "afton.lib.unc.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "University of Northern Colorado   (INNOPAC)",
-        "host": "source.unco.edu",
-        "port": "210",
-        "database": "INNOPAC"
-    },
-    {
-        "name": "University of Notre Dame   (Aleph)",
-        "host": "alephprod.library.nd.edu",
+        "name": "United States Government Printing Office",
+        "host": "z3950.catalog.gpo.gov",
         "port": "9991",
-        "database": "NDU01PUB"
+        "database": "gpo01pub",
+        "location": "USA"
     },
     {
-        "name": "University of Pennsylvania (Alma)",
-        "host": "na03.alma.exlibrisgroup.com",
+        "name": "Universidad del Magdalena -- Colombia   (Alma)",
+        "host": "descubridor.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01UPENN_INST"
+        "database": "57uma_inst",
+        "location": "USA"
     },
     {
-        "name": "University of Reading -- Reading, UK   (SirsiDynix)",
-        "host": "vlsirsi.rdg.ac.uk",
+        "name": "Universidad del Rosario, Colombia   (SirsiDynix)",
+        "host": "universitas.urosario.edu.co",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "Worldwide"
     },
     {
-        "name": "University of Rochester  -- Rochester, NY  (Alma)",
-        "host": "rochester.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "01ROCH_INST"
+        "name": "Universidade de Coimbra (Por.)",
+        "host": "webopac.sib.uc.pt",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Universiteit Gent (Neth.)",
+        "host": "aleph.ugent.be",
+        "port": "9991",
+        "database": "rug01",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University College Cork (Ire.)",
+        "host": "library.ucc.ie",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
         "name": "University of  Saskatchewan   (INNOPAC)",
         "host": "sundog.usask.ca",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Adelaide -- Australia   (Alma)",
+        "host": "ap01.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "Default",
+        "location": "USA"
+    },
+    {
+        "name": "University of Alabama, Tuscaloosa  (Voyager)",
+        "host": "library.ua.edu",
+        "port": "7090",
+        "database": "VOYAGER",
+        "location": "USA"
+    },
+    {
+        "name": "University of Bedfordshire (U.K.)",
+        "host": "library.beds.ac.uk",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Bradford (U.K.)",
+        "host": "catalogue.brad.ac.uk",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Brighton (U.K.)",
+        "host": "prism.brighton.ac.uk",
+        "port": "2121",
+        "database": "prod_talis",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of British Columbia",
+        "host": "ils.library.ubc.ca",
+        "port": "7090",
+        "database": "voyager",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Chicago  (Folio)",
+        "host": "uchicago-z3950.folio.indexdata.com",
+        "port": "210",
+        "database": "chicago",
+        "location": "USA"
+    },
+    {
+        "name": "University of Cincinnati (Ohio)",
+        "host": "uclid.uc.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of Colorado, Colorado Springs   (INNOPAC)",
+        "host": "library.uccs.edu",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "University of Colorado-Health Sciences Center",
+        "host": "skyline.ucdenver.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of Ghana",
+        "host": "library.ug.edu.gh",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Glasgow (U.K.)",
+        "host": "eleanor.lib.gla.ac.uk",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Kansas",
+        "host": "voyager.lib.ku.edu",
+        "port": "7090",
+        "database": "voyager",
+        "location": "USA"
+    },
+    {
+        "name": "University of Louisiana at Lafayette   (SirsiDynix)",
+        "host": "ull.louislibraries.org",
+        "port": "7805",
+        "database": "UNICORN",
+        "location": "USA"
+    },
+    {
+        "name": "University of Louisiana at Monroe   (SirsiDynix)",
+        "host": "ulm.louislibraries.org",
+        "port": "6805",
+        "database": "UNICORN",
+        "location": "USA"
+    },
+    {
+        "name": "University of Maryland   (Aleph)",
+        "host": "alephprod.umd.edu",
+        "port": "210",
+        "database": "CP",
+        "location": "USA"
+    },
+    {
+        "name": "University of Memphis (Tenn.)",
+        "host": "bibliotech.memphis.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of Michigan--Dearborn   (INNOPAC)",
+        "host": "wizard.umd.umich.edu",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "University of Michigan-Dearborn",
+        "host": "141.215.16.4",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of Minnesota--Twin Cities   (Aleph)",
+        "host": "na01.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01UMN_INST",
+        "location": "USA"
+    },
+    {
+        "name": "University of Mississippi",
+        "host": "umiss.lib.olemiss.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of New Orleans   (SirsiDynix)",
+        "host": "uno.louislibraries.org",
+        "port": "5505",
+        "database": "UNICORN",
+        "location": "USA"
+    },
+    {
+        "name": "University of North Carolina at Chapel Hill   (INNOPAC)",
+        "host": "afton.lib.unc.edu",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "University of North Carolina-Asheville",
+        "host": "wncln.wncln.org",
+        "port": "210",
+        "database": "innopac:unca",
+        "location": "USA"
+    },
+    {
+        "name": "University of North Carolina-Chapel Hill",
+        "host": "webcat.lib.unc.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of North Texas",
+        "host": "iii.library.unt.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "University of Northern Colorado   (INNOPAC)",
+        "host": "source.unco.edu",
+        "port": "210",
+        "database": "INNOPAC",
+        "location": "USA"
+    },
+    {
+        "name": "University of Notre Dame   (Aleph)",
+        "host": "alephprod.library.nd.edu",
+        "port": "9991",
+        "database": "NDU01PUB",
+        "location": "USA"
+    },
+    {
+        "name": "University of Oxford (U.K.)",
+        "host": "library.ox.ac.uk",
+        "port": "210",
+        "database": "aleph",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Pennsylvania (Alma)",
+        "host": "na03.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01UPENN_INST",
+        "location": "USA"
+    },
+    {
+        "name": "University of Prince Edward Island",
+        "host": "islandpines.roblib.upei.ca",
+        "port": "2210",
+        "database": "evergreen",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Reading (U.K.)",
+        "host": "vlsirsi.rdg.ac.uk",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Rochester  -- Rochester, NY  (Alma)",
+        "host": "rochester.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01ROCH_INST",
+        "location": "USA"
+    },
+    {
+        "name": "University of San Francisco (Calif.)",
+        "host": "ignacio.usfca.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "University of Sheffield -- UK",
         "host": "eu.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "44SFD_INST"
+        "database": "44SFD_INST",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of South Alabama",
+        "host": "voyager.usouthal.edu",
+        "port": "7090",
+        "database": "voyager",
+        "location": "USA"
     },
     {
         "name": "University of Southern California   (Alma)",
         "host": "uosc.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
-        "name": "University of Toledo -- Toledo, OH   (INNOPAC)",
+        "name": "University of the District of Columbia -- Washington, DC (Alma)",
+        "host": "na04.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01WRLC_DOC",
+        "location": "USA"
+    },
+    {
+        "name": "University of the Witwatersrand (S.A.)",
+        "host": "innopac.wits.ac.za",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Toledo (Ohio)",
         "host": "utmost.cl.utoledo.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "University of Toronto (Alma)",
         "host": "utoronto.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
+    },
+    {
+        "name": "University of Virginia",
+        "host": "virgo.lib.virginia.edu",
+        "port": "2200",
+        "database": "unicorn",
+        "location": "USA"
     },
     {
         "name": "University of Virginia   (SirsiDynix)",
         "host": "ils.lib.virginia.edu",
         "port": "2200",
-        "database": "UNICORN"
+        "database": "UNICORN",
+        "location": "USA"
+    },
+    {
+        "name": "University of Warwick (U.K.)",
+        "host": "webcat.warwick.ac.uk",
+        "port": "210",
+        "database": "innopac",
+        "location": "Worldwide"
+    },
+    {
+        "name": "University of Washington",
+        "host": "na01.alma.exlibrisgroup.com",
+        "port": "1921",
+        "database": "01alliance_uw",
+        "location": "USA"
     },
     {
         "name": "University of Wisconsin -- Eau Claire   (Alma)",
         "host": "na02.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
-        "name": "University of Wisconsin -- Green Bay   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- La Crosse   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Madison  (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Milwaukee   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Oshkosh   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Parkside   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Platteville   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- River Falls   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Stout   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Superior   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Whitewater   (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "University of Wisconsin -- Stevens Point  (Alma)",
-        "host": "na02.alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
-    },
-    {
-        "name": "USMAI Consortium of Libraries (University System of Maryland and Affiliated Institutions)   (Aleph)",
-        "host": "alephprod.umd.edu",
-        "port": "210",
-        "database": "GL"
+        "name": "Univerzita Tomase Bati ve Zline (Czech.)",
+        "host": "aleph.utb.cz",
+        "port": "9991",
+        "database": "utb01_web",
+        "location": "Worldwide"
     },
     {
         "name": "Vancouver Public Library -- Vancouver, BC, Canada   (Horizon)",
         "host": "z3950.vpl.ca",
         "port": "210",
-        "database": "horizon"
+        "database": "horizon",
+        "location": "Worldwide"
     },
     {
-        "name": "Victoria University -- Melbourne, Australia   (INNOPAC)",
+        "name": "Vedecka knihovna v Olomouci (Czech.)",
+        "host": "aleph.vkol.cz",
+        "port": "9991",
+        "database": "svk01",
+        "location": "Worldwide"
+    },
+    {
+        "name": "Victoria University (Australia)",
         "host": "library.vu.edu.au",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "Worldwide"
     },
     {
         "name": "Virginia Commonwealth University   (Alma)",
         "host": "alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
     },
     {
-        "name": "Virginia Commonwealth University Qatar   (Alma)",
-        "host": "alma.exlibrisgroup.com",
-        "port": "1921",
-        "database": "Default"
+        "name": "Virginia Theological Seminary",
+        "host": "librarycatalog.vts.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
-        "name": "Washington University -- St. Louis, MO   (INNOPAC)",
+        "name": "Washington University (Mo.)",
         "host": "catalog.wustl.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Watsonville Public Library (Calif.)",
+        "host": "ils.watsonvillelibrary.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Waukegan Public Library (Ill.)",
+        "host": "catalog.waukeganpl.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Wayne State University (Mich.)",
+        "host": "elibrary.wayne.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Wayne State University -- Detroit, MI   (INNOPAC)",
         "host": "elibrary.wayne.edu",
         "port": "210",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
+    },
+    {
+        "name": "Western Carolina University (N.C.)",
+        "host": "wncln.wncln.org",
+        "port": "210",
+        "database": "innopac:wcu",
+        "location": "USA"
+    },
+    {
+        "name": "Westerville Public Library (Ohio)",
+        "host": "catalog.wpl.lib.oh.us",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
+    },
+    {
+        "name": "Westminster Theological Seminary (Pa.)",
+        "host": "newlibrary.wts.edu",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "William and Mary",
         "host": "na01.alma.exlibrisgroup.com",
         "port": "1921",
-        "database": "01COWM_INST"
+        "database": "01COWM_INST",
+        "location": "USA"
     },
     {
         "name": "Yale Law School   (INNOPAC)",
         "host": "ringding.law.yale.edu",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     },
     {
         "name": "Yale University   (Voyager)",
         "host": "z3950.library.yale.edu",
         "port": "7090",
-        "database": "Default"
+        "database": "Default",
+        "location": "USA"
+    },
+    {
+        "name": "Yolo County Public Library (Calif.)",
+        "host": "web-iii.yolocounty.org",
+        "port": "210",
+        "database": "innopac",
+        "location": "USA"
     },
     {
         "name": "Youngstown and Mahoning County Library -- Ohio   (INNOPAC)",
         "host": "catalog.libraryvisit.org",
         "port": "210",
-        "database": "INNOPAC"
+        "database": "INNOPAC",
+        "location": "USA"
     }
 ]
