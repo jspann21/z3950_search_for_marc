@@ -1,5 +1,40 @@
 [
     {
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "saf",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "hlas",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "naf",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress",
+        "host": "lx2.loc.gov",
+        "port": "210",
+        "database": "lcdb",
+        "location": "USA"
+    },
+    {
+        "name": "Library of Congress -- Washington, DC",
+        "host": "z3950.loc.gov",
+        "port": "7090",
+        "database": "Voyager",
+        "location": "USA"
+    },
+    {
         "name": "AarhusKarlshamn Sweden AB",
         "host": "z3950.libris.kb.se",
         "port": "210",
@@ -1271,41 +1306,6 @@
         "host": "catalog.lioninc.org",
         "port": "210",
         "database": "INNOPAC",
-        "location": "USA"
-    },
-    {
-        "name": "Library of Congress",
-        "host": "lx2.loc.gov",
-        "port": "210",
-        "database": "saf",
-        "location": "USA"
-    },
-    {
-        "name": "Library of Congress",
-        "host": "lx2.loc.gov",
-        "port": "210",
-        "database": "hlas",
-        "location": "USA"
-    },
-    {
-        "name": "Library of Congress",
-        "host": "lx2.loc.gov",
-        "port": "210",
-        "database": "naf",
-        "location": "USA"
-    },
-    {
-        "name": "Library of Congress",
-        "host": "lx2.loc.gov",
-        "port": "210",
-        "database": "lcdb",
-        "location": "USA"
-    },
-    {
-        "name": "Library of Congress -- Washington, DC",
-        "host": "z3950.loc.gov",
-        "port": "7090",
-        "database": "Voyager",
         "location": "USA"
     },
     {
