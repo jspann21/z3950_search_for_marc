@@ -1,0 +1,5 @@
+beautifulsoup4
+pymarc
+PyQt5
+PyQt5_sip
+Requests
