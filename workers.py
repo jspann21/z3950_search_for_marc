@@ -88,9 +88,9 @@ Dependencies:
 """
 
 import subprocess
+from dataclasses import dataclass
 from enum import Enum
 from typing import Union, List, Dict, Tuple, Optional
-from dataclasses import dataclass
 
 from PyQt5.QtCore import (
     QObject, pyqtSignal, QRunnable, pyqtSlot, QMutexLocker, QMutex, QThreadPool,

@@ -48,15 +48,14 @@ Dependencies:
     - sys
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Union, Dict, Any, cast
-
 import gc
 import json
 import os
 import re
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional, Union, Dict, Any, cast
 
 from PyQt5.QtCore import Qt, QThread, pyqtBoundSignal
 from PyQt5.QtGui import QTextCursor, QIcon
@@ -64,7 +63,6 @@ from PyQt5.QtWidgets import (
     QApplication, QCheckBox, QGroupBox, QFileDialog, QLabel, QListWidget, QListWidgetItem,
     QMessageBox, QHBoxLayout, QLineEdit, QPushButton, QProgressBar, QTextEdit, QVBoxLayout, QWidget,
     )
-
 from pymarc import Record
 
 from utils import extract_marc_record, get_record_info, sanitize_filename, is_yaz_client_installed

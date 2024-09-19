@@ -48,6 +48,7 @@ import os
 import re
 import subprocess
 from typing import Optional, Callable, List, Tuple
+
 from pymarc import Field, Subfield, Record
 
 
@@ -311,8 +312,8 @@ def _process_line(line: str, record: Record, log_callback: Optional[Callable[[st
         _log_no_valid_subfields(tag, log_callback)
 
 
-
-def extract_marc_record(raw_data: str, log_callback: Optional[Callable[[str], None]] = None) -> Optional[Record]:
+def extract_marc_record(raw_data: str, log_callback: Optional[Callable[[str], None]] = None) -> \
+        Optional[Record]:
     """
     Extract a single MARC record from raw data.
 
@@ -338,6 +339,4 @@ def extract_marc_record(raw_data: str, log_callback: Optional[Callable[[str], No
         return None
 
     # If everything seems okay, return the record
-    log_callback("MARC record extraction successful.")
     return record
-
