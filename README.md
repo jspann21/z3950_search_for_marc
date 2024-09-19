@@ -1,6 +1,6 @@
 # Z39.50 MARC Record Search Application
 
-This repository contains a PyQt5-based graphical user interface (GUI) application designed to perform **Z39.50** searches across multiple servers to retrieve **MARC** records. The application supports searches by **ISBN**, **Title**, and **Author** and displays the retrieved MARC records in a user-friendly format.
+This repository contains a PyQt5-based graphical user interface (GUI) application designed to perform **Z39.50** searches across multiple servers to retrieve **MARC** records. The application supports searches by **ISBN**, **Title**, and **Author**, filters servers based on location (**USA** or **Worldwide**), and displays the retrieved MARC records in a user-friendly format.
 
 ## Table of Contents
 - [Features](#features)
@@ -10,6 +10,7 @@ This repository contains a PyQt5-based graphical user interface (GUI) applicatio
     - [Handling Results and Navigation](#handling-results-and-navigation)
     - [Dynamic Record Fetching](#dynamic-record-fetching)
     - [Error Handling and Logs](#error-handling-and-logs)
+    - [Location Filtering](#location-filtering)
 - [Configuration: `servers.json`](#configuration-serversjson)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -17,17 +18,29 @@ This repository contains a PyQt5-based graphical user interface (GUI) applicatio
 
 ## Features
 
-- Search by **ISBN** or by a combination of **Title** and **Author**.
-- Communicates with multiple **Z39.50 servers** concurrently, including the **Library of Congress (LOC)**, which is prioritized in the search.
-- Displays retrieved **MARC** records in a formatted view and provides navigation between records.
-- **Download MARC records** to a file in `.mrc` format.
-- Dynamically fetches additional records to **reduce memory usage**.
-- Logs and handles **search progress**, **errors**, and **validations**.
-- Includes a **cancel search** feature for long-running queries.
-- **Error handling and logging** for issues such as missing server keys or malformed MARC data.
-- Two supporting scripts to help manage Z39.50 server information:
-  - **retrieve_loc_z3950_servers.py**: Retrieves Z39.50 server information from the Library of Congress website.
-  - **test_loc_z3950_servers.py**: Tests the connectivity of Z39.50 servers and verifies that they do not require authentication. The results can be used to populate `servers.json`.
+- **Search Functionality**:
+  - Search by **ISBN**.
+  - Search by a combination of **Title** and **Author**.
+  
+- **Location-Based Server Filtering**:
+  - **USA**: Includes servers based in the United States.
+  - **Worldwide**: Includes servers from around the globe.
+  - Users can select one or both locations to filter the servers used in the search.
+  
+- **Concurrent Server Queries**:
+  - Communicates with multiple **Z39.50 servers** concurrently.
+  - Prioritizes the **Library of Congress (LOC)** in the search sequence.
+
+- **MARC Record Management**:
+  - Displays retrieved **MARC** records in a formatted view.
+  - Provides navigation between records with **Next** and **Previous** buttons.
+  - **Download MARC records** to a file in `.mrc` format.
+  
+- **User Experience Enhancements**:
+  - **Progress Bar**: Shows the progress of ongoing search operations.
+  - **Logging**: Comprehensive logs within the application for monitoring operations and debugging.
+  - **Cancel Mechanism**: Allows users to stop long-running searches gracefully.
+  - **Dynamic Record Fetching**: Fetches additional records on-demand to reduce memory usage.
 
 ## How It Works
 
@@ -53,8 +66,8 @@ The **Z39.50 MARC Record Search** application is the main graphical interface fo
 
 3. **Displaying Search Results**:
    - If the server returns a valid response, the application processes the returned data.
-   - **Number of hits**: If multiple records are found, the server response includes a "Number of Hits" line, which indicates how many records match the query. This is displayed in the results window.
-   - The search results window will show summaries of each server response, including the **number of hits** returned by each server.
+   - **Number of Hits**: Displays the number of records matching the query from each server.
+   - The search results window shows summaries of each server response, including the **number of hits** returned by each server.
 
      ![image](https://github.com/user-attachments/assets/2468adea-41a5-4d7a-ac2e-2ab2e26b8e25)
 
@@ -95,6 +108,26 @@ The application fetches records on-demand:
 - Errors like missing server keys, invalid MARC data, or connection issues are logged in the application's **log window**.
 - You can track **search progress** and see details about the queries being run against Z39.50 servers.
 
+#### Location Filtering
+
+The **Location Filtering** feature allows users to filter the Z39.50 servers based on their geographic location, enhancing search relevance and performance.
+
+1. **Location Selection**:
+   - **USA**: Includes servers based in the United States.
+   - **Worldwide**: Includes servers from around the globe.
+   - Users can select one or both options to include the desired set of servers in their search.
+
+2. **Impact on Server Selection**:
+   - When a search is initiated, the application filters the servers listed in `servers.json` based on the selected locations.
+   - Only servers that match the selected locations are queried, reducing unnecessary network requests and focusing the search on relevant servers.
+
+3. **Default Settings**:
+   - Both **USA** and **Worldwide** filters are checked by default, allowing searches across all available servers.
+   - Users can uncheck either option to limit the search scope as needed.
+
+4. **Configuration Dependence**:
+   - Each server entry in `servers.json` must include a `"location"` field specifying its geographic category (`"USA"` or `"Worldwide"`).
+   - Proper configuration ensures that the filtering works correctly during searches.
 
 
 ### Configuration: `servers.json`
@@ -110,11 +143,26 @@ Example `servers.json` structure:
     "host": "z3950.loc.gov",
     "port": 7090,
     "database": "VOYAGER",
-    "locatino": USA
+    "location": "USA"
   },
+  {
+    "name": "British Library",
+    "host": "z3950.bl.uk",
+    "port": 210,
+    "database": "UKPD",
+    "location": "Worldwide"
+  }
   // Add more server entries here...
 ]
 ```
+
+### Fields Explained:
+
+- **name**: The name of the Z39.50 server.
+- **host**: The hostname or IP address of the server.
+- **port**: The port number on which the server listens for Z39.50 requests.
+- **database**: The specific database to query on the server.
+- **location**: The geographic category of the server (`"USA"` or `"Worldwide"`).
 
 ## Installation
 
@@ -146,9 +194,25 @@ python main.py
 
 The graphical user interface will open, allowing you to:
 
-1. **Search by ISBN** or **Title/Author**.
-2. **View results** and **navigate** through records.
-3. **Download MARC records** to your local machine.
+1. **Search by ISBN** or **Title/Author**:
+   - Enter the ISBN in the ISBN search box or enter the Title and Author in the respective fields.
+   - Select the desired locations (**USA**, **Worldwide**, or both) to filter the servers used in the search.
+   - Click the corresponding search button to initiate the search.
+
+2. **View Results** and **Navigate** through records:
+   - Search results will display summaries of each server's response.
+   - Click on a result to view detailed MARC record information.
+   - Use the **Next** and **Previous** buttons to navigate through records.
+
+3. **Download MARC Records**:
+   - After viewing a record, click the **Download Record** button to save the MARC record in `.mrc` format.
+
+4. **Monitor Progress and Logs**:
+   - The **progress bar** shows the search progress.
+   - The **log window** displays detailed logs for operations and debugging.
+
+5. **Cancel Searches**:
+   - Click the **Cancel** button to stop ongoing searches gracefully.
 
 ## Contributing
 
