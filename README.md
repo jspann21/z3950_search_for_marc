@@ -5,12 +5,11 @@ This repository contains a PyQt5-based graphical user interface (GUI) applicatio
 ## Table of Contents
 - [Features](#features)
 - [How It Works](#how-it-works)
-  - [Main Application: `z3950search.py`](#main-application-z3950searchpy)
+  - [Main Application: `main.py`](#main-application-mainpy)
     - [Running a Search](#running-a-search)
     - [Handling Results and Navigation](#handling-results-and-navigation)
-- [Supporting Scripts](#supporting-scripts)
-  - [Retrieve Z39.50 Servers: `retrieve_loc_z3950_servers.py`](#retrieve-z3950-servers-retrieve_loc_z3950_serverspy)
-  - [Test Z39.50 Servers: `test_loc_z3950_servers.py`](#test-z3950-servers-test_loc_z3950_serverspy)
+    - [Dynamic Record Fetching](#dynamic-record-fetching)
+    - [Error Handling and Logs](#error-handling-and-logs)
 - [Configuration: `servers.json`](#configuration-serversjson)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -22,16 +21,17 @@ This repository contains a PyQt5-based graphical user interface (GUI) applicatio
 - Communicates with multiple **Z39.50 servers** concurrently, including the **Library of Congress (LOC)**, which is prioritized in the search.
 - Displays retrieved **MARC** records in a formatted view and provides navigation between records.
 - **Download MARC records** to a file in `.mrc` format.
-- Displays **search progress** and logs for user feedback.
-- Provides a **cancel mechanism** to stop long-running searches.
-- Dynamically fetches **additional records** when navigating through multiple results, reducing memory usage.
-- Includes two supporting scripts:
+- Dynamically fetches additional records to **reduce memory usage**.
+- Logs and handles **search progress**, **errors**, and **validations**.
+- Includes a **cancel search** feature for long-running queries.
+- **Error handling and logging** for issues such as missing server keys or malformed MARC data.
+- Two supporting scripts to help manage Z39.50 server information:
   - **retrieve_loc_z3950_servers.py**: Retrieves Z39.50 server information from the Library of Congress website.
   - **test_loc_z3950_servers.py**: Tests the connectivity of Z39.50 servers and verifies that they do not require authentication. The results can be used to populate `servers.json`.
 
 ## How It Works
 
-### Main Application: `z3950search.py`
+### Main Application: `main.py`
 
 The **Z39.50 MARC Record Search** application is the main graphical interface for users to search and retrieve **MARC records** from configured Z39.50 servers.
 
@@ -41,39 +41,38 @@ The **Z39.50 MARC Record Search** application is the main graphical interface fo
    - You can search by entering an **ISBN** or a **Title** and **Author**.
    - After entering the desired search terms, click the corresponding search button to initiate the search.
 
-      ![image](https://github.com/user-attachments/assets/e755485c-2235-4bcf-b55f-5f7b27363df8)
+      ![image](https://github.com/user-attachments/assets/6c4c0307-8a7f-45d4-9c5a-5f7a4399d208)
 
 
 
 
 2. **Running the Search**:
-   - When a search is initiated, the application constructs a query command compatible with the **YAZ client**. YAZ (Z39.50 toolkit) is a crucial component that handles communication with Z39.50 servers.
-   - The query is formatted based on the type of search (e.g., ISBN or Title/Author). It sends the query to each configured server in `servers.json`, with **LOC** being the first server queried.
-   - The command runs through the **YAZ client** using the subprocess module, sending the query and waiting for a response from the server.
-   - Progress is displayed in the **progress bar** at the top of the window.
+   - The application constructs a query command using the **YAZ client** to communicate with Z39.50 servers.
+   - The search query is formatted based on the search type (ISBN or Title/Author) and sent to the servers configured in the `servers.json` file. **LOC** is queried first.
+   - A **progress bar** shows the progress of the search.
 
 3. **Displaying Search Results**:
    - If the server returns a valid response, the application processes the returned data.
    - **Number of hits**: If multiple records are found, the server response includes a "Number of Hits" line, which indicates how many records match the query. This is displayed in the results window.
    - The search results window will show summaries of each server response, including the **number of hits** returned by each server.
 
-     ![image](https://github.com/user-attachments/assets/dcae2e5b-5aa3-4f4b-a9d2-0ba0be868d83)
+     ![image](https://github.com/user-attachments/assets/2468adea-41a5-4d7a-ac2e-2ab2e26b8e25)
 
 
 #### Handling Results and Navigation
 
 1. **Clicking on Search Results**:
-   - After a search is complete, you can click on any result in the list to view more details about the records returned by that server.
-   - Initially, only the first record from the server is retrieved. The rest of the records are **fetched dynamically** when requested.
-   
+   - After a search completes, you can click on any result in the list to view more details about the records returned.
+   - Initially, only the first record is retrieved. The remaining records are fetched dynamically when requested.
+
 2. **Navigating Between Results**:
-   - You can navigate between the records using the **Next Record** and **Previous Record** buttons.
-   - When navigating, instead of loading all the records at once, the application sends a new **YAZ client** command to retrieve the next record from the server. This **on-demand record retrieval** improves memory usage and performance by fetching records only as needed.
+   - You can use the **Next Record** and **Previous Record** buttons to navigate through records.
+   - As you navigate, the application dynamically fetches additional records from the server, improving performance by fetching only what’s needed.
    - For each record, the MARC fields are parsed and displayed in a human-readable format in the details window. Control fields (tags `001-009`) and data fields (tags `900+`) are discarded because they were found to contain unnecessary or non-essential information.
 
      **Note**: MARC record fields `000-009` and `900+` are excluded because they often contain metadata or control information that is not useful for this application’s purposes.
 
-     ![image](https://github.com/user-attachments/assets/6dfef584-caf1-4fc2-9c02-366b79a5b4ee)
+     ![image](https://github.com/user-attachments/assets/0405cb9e-093c-4196-959b-da49c6a7f6f8)
 
 
 3. **Downloading Records**:
@@ -84,61 +83,25 @@ The **Z39.50 MARC Record Search** application is the main graphical interface fo
    - The application uses the **`pymarc`** library to parse, process, and display MARC records.
    - After retrieving the raw data from the Z39.50 server, the application uses `pymarc` to recreate a new MARC record object. Only the relevant fields (tags `010-899`) are included in this object.
    - The new MARC record can then be saved to a file in `.mrc` format, allowing the user to easily share or archive the record.
-
-### Supporting Scripts
-
-#### Retrieve z39.50 servers `retrieve_loc_z3950_servers.py`
-
-This script is designed to pull Z39.50 server information from the Library of Congress (LOC) website. It scrapes the server list provided on the LOC's public resources and compiles the data into a format that can be used in the `servers.json` file for the Z39.50 search tool.
-
-The process flow of the script is as follows:
-
-1. **Scraping the LOC Website**: 
-   The script makes a request to the LOC website that contains a list of Z39.50 servers and parses the HTML response using the `BeautifulSoup` library to extract server data, including hostnames, ports, and database names.
    
-2. **Formatting the Server Data**:
-   After scraping, the server data is structured into a list of dictionaries. Each dictionary contains important details like the server name, host, port, and database. These details are essential for establishing connections with Z39.50 servers.
+#### Dynamic Record Fetching
 
-3. **Writing to `loc_servers.json`**:
-   The extracted server information is written to a file named `loc_servers.json`, which can be renamed `servers.json` to be used by the main `z3950search` application to query Z39.50 servers for MARC records.
+The application fetches records on-demand:
+- When you request the next record, the application queries the server dynamically rather than fetching all records at once.
+- This feature improves memory usage and performance, especially with large result sets.
 
-##### Example Usage:
+#### Error Handling and Logs
 
-- The script sends a request to the LOC's server information page and uses `BeautifulSoup` to parse the server details.
-- The results are saved in a `loc_servers.json` file. The `test_loc_z3950_servers.py` script will read the `loc_servers.json` file to determine which servers are available and open. These two scripts could have been combined, but they're not.
+- Errors like missing server keys, invalid MARC data, or connection issues are logged in the application's **log window**.
+- You can track **search progress** and see details about the queries being run against Z39.50 servers.
 
-This script simplifies the process of obtaining and updating the Z39.50 server list from the LOC, ensuring that your `servers.json` file is always up to date with the latest publicly available Z39.50 servers.
-
-
-#### Test z39.50 servers `test_loc_z3950_servers.py`
-
-This script is used to test the connectivity of each Z39.50 server retrieved by `retrieve_loc_z3950_servers.py`. It ensures that the servers are available and do not require authentication (since some Z39.50 servers are restricted and may not be publicly accessible). 
-
-The process flow is as follows:
-
-1. **Testing the Connection**: 
-   Each server from the list `loc_servers.json` is tested using the `yaz-client` command to ensure that the server can be reached.
-   
-2. **Authentication Check**:
-   It verifies whether the server requires authentication. Only servers that do not require authentication are written to `non_auth_loc_servers.json` for consideration.
-
-3. **Writing Reachable Servers to File**:
-   The script writes the servers that successfully pass the connection and authentication test to a new file. This ensures that only servers that can be queried without issues are included in the final `non_auth_loc_servers.json` file.
-
-These servers can be copied to `servers.json` to ensure the file contains a list of functional and publicly accessible Z39.50 servers.
-
-##### Example Usage:
-
-- The script will iterate through each server in `loc_servers.json` generated by `retrieve_loc_z3950_servers.py` and attempt to connect.
-- Any servers that are reachable and do not require authentication are written to a new file.
-  
 
 
 ### Configuration: `servers.json`
 
-The **`servers.json`** file contains a list of server configurations used by the application to query MARC records. If you retrieve new server data or validate existing servers, update this file with the correct configurations.
+The **`servers.json`** file contains a list of Z39.50 servers used by the application for querying MARC records. If you find new server data or validate existing servers, update this file with the correct configurations.
 
-#### Example `servers.json` structure:
+Example `servers.json` structure:
 
 ```json
 [
@@ -146,8 +109,9 @@ The **`servers.json`** file contains a list of server configurations used by the
     "name": "Library of Congress",
     "host": "z3950.loc.gov",
     "port": 7090,
-    "database": "VOYAGER"
-  }
+    "database": "VOYAGER",
+    "locatino": USA
+  },
   // Add more server entries here...
 ]
 ```
@@ -169,21 +133,15 @@ The **`servers.json`** file contains a list of server configurations used by the
 
 3. Ensure the **YAZ client** is installed and available in your system's PATH. You can find instructions and download links here: [YAZ Client by IndexData](https://www.indexdata.com/resources/software/yaz/).
 
-4. Populate the `servers.json` file by running the **retrieve_loc_z3950_servers.py** and **test_loc_z3950_servers.py** scripts.
+4. Ensure the `servers.json` file containing z39.50 server information is located with the scripts.
 
-    ```bash
-    python retrieve_loc_z3950_servers.py
-    python test_loc_z3950_servers.py
-    ```
-
-    Ensure that the `servers.json` file is updated with working servers.
 
 ## Usage
 
 To run the application:
 
 ```bash
-python z3950search.py
+python main.py
 ```
 
 The graphical user interface will open, allowing you to:
