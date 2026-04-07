@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "z3950-search-for-marc"
+version = "0.2.0"
+description = "Desktop GUI for searching Z39.50 servers and exporting MARC records."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-only" }
+authors = [{ name = "Jeremy Spann" }]
+dependencies = [
+  "PyQt6~=6.11",
+  "pymarc~=5.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy~=1.18",
+  "pyinstaller~=6.19",
+  "pytest~=8.4",
+  "pytest-qt~=4.5",
+  "ruff~=0.13",
+]
+
+[project.scripts]
+z3950-search = "z3950_search_for_marc.__main__:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+z3950_search_for_marc = ["resources/*.ico", "resources/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyqt6"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "B",
+  "W",
+  "UP",
+  "N",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["N802", "N803", "N806"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src", "tests"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_optional = true
+check_untyped_defs = true
+disallow_any_generics = false
+ignore_missing_imports = true

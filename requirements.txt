@@ -1,3 +1,2 @@
-pymarc
-PyQt5
-Requests
+PyQt6~=6.11
+pymarc~=5.3
