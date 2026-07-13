@@ -1,709 +1,607 @@
-"""PyQt6 desktop application for Z39.50 MARC searching."""
+"""Application composition and desktop workflow coordination."""
 
 from __future__ import annotations
 
 import re
 import sys
-from collections.abc import Callable
-from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
+from uuid import UUID
 
-from pymarc import Record
-from PyQt6.QtCore import QSettings, Qt, QThread, pyqtBoundSignal
-from PyQt6.QtGui import QIcon, QTextCursor
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import (
+    QObject,
+    QRunnable,
+    QSettings,
+    Qt,
+    QThreadPool,
+    QTimer,
+    QUrl,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QIcon, QKeySequence
+from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
     QDialog,
     QFileDialog,
-    QFormLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
+    QMainWindow,
     QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QSpinBox,
-    QTextEdit,
+    QSplitter,
     QVBoxLayout,
     QWidget,
 )
 
-from .config import load_servers, resolve_server_catalog_path
+from . import __version__
+from .dialogs import SettingsDialog
+from .domain.models import (
+    AppSettings,
+    BackendFailure,
+    FailureKind,
+    QueryType,
+    SearchProgress,
+    SearchRequest,
+    SearchSession,
+    ServerDefinition,
+    ServerResult,
+    ServerStatus,
+)
+from .infrastructure.catalog import CatalogRepository, overlay_servers
+from .infrastructure.paths import AppDataPaths
+from .infrastructure.yaz_engine import SessionEngine, ZoomSessionEngine
 from .marc import (
-    extract_marc_record,
     format_record_for_display,
     get_record_info,
-    is_yaz_client_installed,
+    record_bytes_for_export,
     sanitize_filename,
 )
-from .models import AppSettings, QueryType, SearchResult, SearchState, ServerConfig
+from .models import MarcRecord, RecordReference, SearchState
 from .resources import resource_path
+from .search import SearchCoordinator
 from .settings import SettingsStore
-from .workers import NextRecordWorker, NextRecordWorkerConfig, Worker, WorkerConfig
-from .yaz import YAZClient
+from .theme import apply_theme
+from .widgets import ActivityPanel, RecordPanel, ResultsPanel, SearchPanel
+
+__all__ = ["SettingsDialog", "Z3950SearchApp", "build_application", "run"]
+
+PROJECT_REPOSITORY_URL = "https://github.com/jspann21/z3950_search_for_marc"
+APPLICATION_DISPLAY_NAME = f"Z39.50 MARC Search {__version__}"
 
 
-@dataclass(slots=True)
-class WorkerInfo:
-    worker: Any | None = None
-    thread: QThread | None = None
+class _CatalogUpdateSignals(QObject):
+    completed = Signal(object)
+    failed = Signal(str)
 
 
-class WorkerManager:
-    """Create and clean up worker threads."""
+class _CatalogUpdateTask(QRunnable):
+    def __init__(self, repository: CatalogRepository) -> None:
+        super().__init__()
+        self.repository = repository
+        self.signals = _CatalogUpdateSignals()
 
-    def __init__(self) -> None:
-        self.worker_info = WorkerInfo()
-
-    @staticmethod
-    def create_worker_thread(
-        worker_factory: Callable[[], Any],
-        worker_signals: dict[str, Callable[..., Any]],
-    ) -> tuple[Any, QThread]:
-        worker = worker_factory()
-        thread = QThread()
-        worker.moveToThread(thread)
-        worker.finished.connect(thread.quit)
-        worker.finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
-        for signal_name, handler in worker_signals.items():
-            signal = cast(pyqtBoundSignal, getattr(worker, signal_name))
-            signal.connect(handler)
-        thread.started.connect(worker.run)
-        thread.start()
-        return worker, thread
-
-    def cleanup_worker_thread(self) -> None:
-        worker = self.worker_info.worker
-        thread = self.worker_info.thread
-        if worker is None or thread is None:
-            return
-
+    @Slot()
+    def run(self) -> None:
         try:
-            if thread.isRunning():
-                cancel = getattr(worker, "cancel", None)
-                if callable(cancel):
-                    cancel()
-                thread.quit()
-                thread.wait(5000)
-        finally:
-            self.worker_info = WorkerInfo()
+            result = self.repository.check_for_update()
+        except Exception as exc:  # network and validation boundaries are reported to the UI
+            self.signals.failed.emit(str(exc))
+        else:
+            self.signals.completed.emit(result)
 
 
-class SettingsDialog(QDialog):
-    """Settings UI backed by AppSettings."""
-
-    def __init__(self, settings: AppSettings, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle("Settings")
-        self._saved_settings: AppSettings | None = None
-
-        layout = QVBoxLayout(self)
-        form = QFormLayout()
-
-        self.yaz_path_input = QLineEdit(settings.yaz_executable, self)
-        self.server_catalog_input = QLineEdit(settings.server_catalog_path, self)
-        self.max_threads_input = QSpinBox(self)
-        self.max_threads_input.setRange(1, 32)
-        self.max_threads_input.setValue(settings.max_concurrent_queries)
-        self.timeout_input = QSpinBox(self)
-        self.timeout_input.setRange(1, 60)
-        self.timeout_input.setValue(settings.server_timeout_seconds)
-        self.default_save_directory_input = QLineEdit(settings.default_save_directory, self)
-        self.trim_records_checkbox = QCheckBox("Trim tags 000-009 and 900+", self)
-        self.trim_records_checkbox.setChecked(settings.trim_records)
-
-        yaz_layout = QHBoxLayout()
-        yaz_layout.addWidget(self.yaz_path_input)
-        browse_yaz = QPushButton("Browse", self)
-        browse_yaz.clicked.connect(self._browse_yaz_path)
-        yaz_layout.addWidget(browse_yaz)
-
-        catalog_layout = QHBoxLayout()
-        catalog_layout.addWidget(self.server_catalog_input)
-        browse_catalog = QPushButton("Browse", self)
-        browse_catalog.clicked.connect(self._browse_catalog_path)
-        catalog_layout.addWidget(browse_catalog)
-
-        save_dir_layout = QHBoxLayout()
-        save_dir_layout.addWidget(self.default_save_directory_input)
-        browse_save_dir = QPushButton("Browse", self)
-        browse_save_dir.clicked.connect(self._browse_save_directory)
-        save_dir_layout.addWidget(browse_save_dir)
-
-        form.addRow("YAZ executable", yaz_layout)
-        form.addRow("Server catalog", catalog_layout)
-        form.addRow("Max concurrent queries", self.max_threads_input)
-        form.addRow("Timeout (seconds)", self.timeout_input)
-        form.addRow("Default save directory", save_dir_layout)
-        form.addRow("", self.trim_records_checkbox)
-        layout.addLayout(form)
-
-        buttons = QHBoxLayout()
-        save_button = QPushButton("Save", self)
-        cancel_button = QPushButton("Cancel", self)
-        save_button.clicked.connect(self._save)
-        cancel_button.clicked.connect(self.reject)
-        buttons.addStretch(1)
-        buttons.addWidget(save_button)
-        buttons.addWidget(cancel_button)
-        layout.addLayout(buttons)
-
-    @property
-    def saved_settings(self) -> AppSettings | None:
-        return self._saved_settings
-
-    def _browse_yaz_path(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select yaz-client executable")
-        if file_path:
-            self.yaz_path_input.setText(file_path)
-
-    def _browse_catalog_path(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select server catalog",
-            self.server_catalog_input.text() or str(Path.home()),
-            "JSON Files (*.json)",
-        )
-        if file_path:
-            self.server_catalog_input.setText(file_path)
-
-    def _browse_save_directory(self) -> None:
-        directory = QFileDialog.getExistingDirectory(
-            self,
-            "Select default save directory",
-            self.default_save_directory_input.text() or str(Path.home()),
-        )
-        if directory:
-            self.default_save_directory_input.setText(directory)
-
-    def _save(self) -> None:
-        self._saved_settings = AppSettings(
-            yaz_executable=self.yaz_path_input.text(),
-            server_catalog_path=self.server_catalog_input.text(),
-            max_concurrent_queries=self.max_threads_input.value(),
-            server_timeout_seconds=self.timeout_input.value(),
-            default_save_directory=self.default_save_directory_input.text(),
-            trim_records=self.trim_records_checkbox.isChecked(),
-        ).normalized()
-        self.accept()
-
-
-class Z3950SearchApp(QWidget):
-    """Main application window."""
-
-    def __init__(self, qsettings: QSettings | None = None) -> None:
+class Z3950SearchApp(QMainWindow):
+    def __init__(
+        self,
+        qsettings: QSettings | None = None,
+        engine: SessionEngine | None = None,
+        *,
+        settings_store: SettingsStore | None = None,
+        catalog_repository: CatalogRepository | None = None,
+    ) -> None:
         super().__init__()
         self.qsettings = qsettings or QSettings()
-        self.settings_store = SettingsStore(self.qsettings)
+        self.paths = catalog_repository.paths if catalog_repository else AppDataPaths.default()
+        self.settings_store = settings_store or SettingsStore(
+            self.qsettings, path=self.paths.settings
+        )
         self.app_settings = self.settings_store.load()
-        self.servers: list[ServerConfig] = []
+        application = cast(QApplication | None, QApplication.instance())
+        if application is not None:
+            apply_theme(application, self.app_settings.theme)
+        self.catalog_repository = catalog_repository or CatalogRepository(self.paths)
+        self._startup_warnings: list[str] = []
+        if self.app_settings.disabled_server_ids and not self.paths.disabled_servers.exists():
+            self.catalog_repository.save_disabled_ids(self.app_settings.disabled_server_ids)
+        self.catalog_document = self.catalog_repository.load_upstream()
+        self.servers: list[ServerDefinition] = []
+        self._reload_catalog()
         self.search_state = SearchState()
-        self.worker_manager = WorkerManager()
-        self.next_record_worker_manager = WorkerManager()
-        self.fetch_in_progress = False
+        self.engine = engine or ZoomSessionEngine()
+        self.coordinator = SearchCoordinator(self.engine, self)
+        self._search_running = False
+        self._successful_servers = 0
+        self._failed_servers = 0
+        self._update_task: _CatalogUpdateTask | None = None
 
         self._init_ui()
-        self._apply_window_icon()
-        self._load_servers()
-        self._warn_if_yaz_missing()
+        self._connect_coordinator()
+        self._report_engine_status()
+        if self.app_settings.automatic_catalog_updates and self.catalog_repository.update_due(
+            self.app_settings.last_catalog_check_at
+        ):
+            QTimer.singleShot(1500, self._check_catalog_update)
 
     def _init_ui(self) -> None:
-        self.setWindowTitle("Z39.50 MARC Record Search")
-        self.resize(1000, 720)
-
-        self.isbn_input = QLineEdit(self)
-        self.isbn_input.setPlaceholderText("Enter ISBN")
-        self.search_isbn_button = QPushButton("Search ISBN", self)
-        self.search_isbn_button.clicked.connect(self._start_isbn_search)
-
-        self.title_input = QLineEdit(self)
-        self.title_input.setPlaceholderText("Enter Title")
-        self.author_input = QLineEdit(self)
-        self.author_input.setPlaceholderText("Enter Author")
-        self.search_title_author_button = QPushButton("Search Title && Author", self)
-        self.search_title_author_button.clicked.connect(self._start_title_author_search)
-
-        self.cancel_button = QPushButton("Cancel", self)
-        self.cancel_button.setEnabled(False)
-        self.cancel_button.clicked.connect(self._cancel_search)
-
-        self.settings_button = QPushButton("Settings", self)
-        self.settings_button.clicked.connect(self._open_settings_dialog)
-
-        self.usa_checkbox = QCheckBox("USA", self)
-        self.usa_checkbox.setChecked(True)
-        self.worldwide_checkbox = QCheckBox("Worldwide", self)
-        self.worldwide_checkbox.setChecked(True)
-
-        self.progress_bar = QProgressBar(self)
-        self.results_window = QListWidget(self)
-        self.results_window.itemClicked.connect(self._on_result_clicked)
-        self.record_details_window = QTextEdit(self)
-        self.record_details_window.setReadOnly(True)
-        self.download_button = QPushButton("Download Record", self)
-        self.download_button.clicked.connect(self._download_marc_record)
-        self.download_button.setEnabled(False)
-
-        self.prev_record_button = QPushButton("Previous Record", self)
-        self.prev_record_button.clicked.connect(self._show_prev_record)
-        self.prev_record_button.setEnabled(False)
-        self.next_record_button = QPushButton("Next Record", self)
-        self.next_record_button.clicked.connect(self._show_next_record)
-        self.next_record_button.setEnabled(False)
-
-        self.log_window = QTextEdit(self)
-        self.log_window.setReadOnly(True)
-        self.log_window.setMaximumHeight(160)
-
-        top_layout = QHBoxLayout()
-
-        isbn_group = QGroupBox("Search by ISBN")
-        isbn_layout = QVBoxLayout()
-        isbn_layout.addWidget(self.isbn_input)
-        isbn_layout.addWidget(self.search_isbn_button)
-        isbn_group.setLayout(isbn_layout)
-
-        title_group = QGroupBox("Search by Title && Author")
-        title_layout = QVBoxLayout()
-        title_layout.addWidget(self.title_input)
-        title_layout.addWidget(self.author_input)
-        title_layout.addWidget(self.search_title_author_button)
-        title_group.setLayout(title_layout)
-
-        location_group = QGroupBox("Filter by Location")
-        location_layout = QVBoxLayout()
-        location_layout.addWidget(self.usa_checkbox)
-        location_layout.addWidget(self.worldwide_checkbox)
-        location_layout.addWidget(self.settings_button)
-        location_layout.addWidget(self.cancel_button)
-        location_group.setLayout(location_layout)
-
-        top_layout.addWidget(isbn_group)
-        top_layout.addWidget(title_group)
-        top_layout.addWidget(location_group)
-
-        nav_layout = QHBoxLayout()
-        nav_layout.addWidget(self.prev_record_button)
-        nav_layout.addWidget(self.next_record_button)
-
-        main_layout = QVBoxLayout(self)
-        main_layout.addLayout(top_layout)
-        main_layout.addWidget(self.progress_bar)
-        main_layout.addWidget(QLabel("Search Results:", self))
-        main_layout.addWidget(self.results_window)
-        main_layout.addWidget(QLabel("Record Details:", self))
-        main_layout.addWidget(self.record_details_window)
-        main_layout.addLayout(nav_layout)
-        main_layout.addWidget(self.download_button)
-        main_layout.addWidget(QLabel("Log:", self))
-        main_layout.addWidget(self.log_window)
-
-    def _apply_window_icon(self) -> None:
+        self.setWindowTitle(APPLICATION_DISPLAY_NAME)
+        self.setMinimumSize(1180, 700)
+        self.resize(1520, 880)
         icon_path = resource_path("app_icon.ico")
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
+        self.search_panel = SearchPanel(self)
+        self.results_panel = ResultsPanel(self)
+        self.record_panel = RecordPanel(self)
+        self.activity_panel = ActivityPanel(self)
+        self.workspace = QSplitter(self)
+        self.workspace.setChildrenCollapsible(False)
+        self.workspace.addWidget(self.search_panel)
+        self.workspace.addWidget(self.results_panel)
+        self.workspace.addWidget(self.record_panel)
+        self.workspace.setStretchFactor(0, 0)
+        self.workspace.setStretchFactor(1, 1)
+        self.workspace.setStretchFactor(2, 1)
+        self.workspace.setSizes([285, 610, 625])
+        central = QWidget(self)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.workspace, 1)
+        layout.addWidget(self.activity_panel)
+        self.setCentralWidget(central)
+        self._status_bar = self.statusBar()
+        self._status_bar.showMessage("Ready")
+
+        self.search_panel.search_requested.connect(self._start_search_from_panel)
+        self.search_panel.cancel_requested.connect(self._cancel_search)
+        self.search_panel.settings_requested.connect(self._open_settings_dialog)
+        self.results_panel.result_selected.connect(self._select_result)
+        self.record_panel.previous_requested.connect(self._show_previous_record)
+        self.record_panel.next_requested.connect(self._show_next_record)
+        self.record_panel.export_requested.connect(self._export_record)
+
+        settings_action = QAction("Settings", self)
+        settings_action.setShortcut(QKeySequence("Ctrl+,"))
+        settings_action.triggered.connect(self._open_settings_dialog)
+        update_action = QAction("Check server catalog for updates", self)
+        update_action.triggered.connect(self._check_catalog_update)
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut(QKeySequence("Ctrl+Q"))
+        exit_action.triggered.connect(self.close)
+        github_action = QAction("View project on GitHub", self)
+        github_action.triggered.connect(self._open_project_repository)
+        self.addAction(settings_action)
+        self.addAction(update_action)
+        self.addAction(exit_action)
+        self.addAction(github_action)
+        file_menu = self.menuBar().addMenu("File")
+        file_menu.addAction(settings_action)
+        file_menu.addSeparator()
+        file_menu.addAction(exit_action)
+        catalog_menu = self.menuBar().addMenu("Server Catalog")
+        catalog_menu.addAction(update_action)
+        help_menu = self.menuBar().addMenu("Help")
+        help_menu.addAction(github_action)
+
+        # Stable compatibility attributes for existing UI automation.
+        self.isbn_input = self.search_panel.isbn_input
+        self.title_input = self.search_panel.title_input
+        self.author_input = self.search_panel.author_input
+        self.usa_checkbox = self.search_panel.usa_checkbox
+        self.worldwide_checkbox = self.search_panel.worldwide_checkbox
+        self.progress_bar = self.results_panel.progress
+        self.results_window = self.results_panel.table
+        self.record_details_window = self.record_panel.details
+        self.log_window = self.activity_panel.log
+        self.download_button = self.record_panel.export_button
+        self.prev_record_button = self.record_panel.previous_button
+        self.next_record_button = self.record_panel.next_button
+        self.cancel_button = self.search_panel.cancel_button
+        self.settings_button = self.search_panel.settings_button
+        self.search_isbn_button = self.search_panel.search_button
+        self.search_title_author_button = self.search_panel.search_button
+
+    def _connect_coordinator(self) -> None:
+        self.coordinator.server_changed.connect(self._handle_server_change)
+        self.coordinator.progress_changed.connect(self._handle_progress)
+        self.coordinator.search_finished.connect(self._handle_search_finished)
+        self.coordinator.record_fetched.connect(self._handle_record_fetched)
 
     def log_message(self, message: str) -> None:
-        self.log_window.append(message)
-        self.log_window.moveCursor(QTextCursor.MoveOperation.End)
-        self.log_window.ensureCursorVisible()
+        self.activity_panel.append(message)
 
-    def _warn_if_yaz_missing(self) -> None:
-        if not is_yaz_client_installed(self.app_settings.yaz_executable):
+    def _report_engine_status(self) -> None:
+        for warning in self._startup_warnings:
+            self.log_message(warning)
+        if self.engine.available:
+            self.log_message(f"Embedded YAZ engine ready: {self.engine.version}")
+            self._status_bar.showMessage(
+                f"Ready · catalog {self.catalog_document.catalog_version} · "
+                f"{len(self.servers)} servers"
+            )
+        else:
             self.log_message(
-                "Configured yaz-client executable was not found. "
-                "Update it in Settings before searching."
+                "Embedded YAZ engine is unavailable; reinstall the complete application."
             )
+            self._status_bar.showMessage("Embedded protocol engine unavailable")
 
-    def _load_servers(self) -> bool:
-        catalog_path = resolve_server_catalog_path(self.app_settings.server_catalog_path)
+    def _reload_catalog(self) -> None:
+        self.catalog_document = self.catalog_repository.load_upstream()
         try:
-            self.servers = load_servers(catalog_path)
-            self.log_message(f"Loaded {len(self.servers)} servers from '{catalog_path}'.")
-            return True
-        except FileNotFoundError:
-            self.servers = []
-            self.log_message(f"Server configuration file not found: {catalog_path}")
-            QMessageBox.critical(
-                self,
-                "Configuration Error",
-                f"Server catalog not found:\n{catalog_path}",
-            )
-            return False
+            custom = self.catalog_repository.load_custom()
         except (OSError, ValueError) as exc:
-            self.servers = []
-            self.log_message(f"Failed to load server catalog: {exc}")
-            QMessageBox.critical(self, "Configuration Error", str(exc))
-            return False
-
-    def _open_settings_dialog(self) -> None:
-        dialog = SettingsDialog(self.app_settings, self)
-        if dialog.exec() != QDialog.DialogCode.Accepted or dialog.saved_settings is None:
-            return
-
-        self.app_settings = self.settings_store.save(dialog.saved_settings)
-        self.log_message("Settings saved.")
-        self._load_servers()
-        self._warn_if_yaz_missing()
+            custom = ()
+            self._startup_warnings.append(
+                f"Custom server catalog was ignored because it is invalid: {exc}"
+            )
+        self.servers = list(
+            overlay_servers(
+                self.catalog_document.servers,
+                custom,
+                self.catalog_repository.load_disabled_ids(),
+            )
+        )
 
     @staticmethod
     def validate_isbn(isbn: str) -> bool:
-        isbn = isbn.replace("-", "").replace(" ", "").upper()
-        if not re.fullmatch(r"(97[89])?\d{9}[\dX]", isbn):
+        normalized = isbn.replace("-", "").replace(" ", "").upper()
+        if not re.fullmatch(r"(97[89])?\d{9}[\dX]", normalized):
             return False
-        if len(isbn) == 10:
-            total = sum(
-                (10 - i) * (10 if char == "X" else int(char))
-                for i, char in enumerate(isbn)
+        if len(normalized) == 10:
+            return (
+                sum(
+                    (10 - index) * (10 if char == "X" else int(char))
+                    for index, char in enumerate(normalized)
+                )
+                % 11
+                == 0
             )
-            return total % 11 == 0
-        if len(isbn) == 13 and "X" not in isbn:
-            total = sum((1 if i % 2 == 0 else 3) * int(char) for i, char in enumerate(isbn))
-            return total % 10 == 0
-        return False
+        return (
+            len(normalized) == 13
+            and "X" not in normalized
+            and sum(
+                (1 if index % 2 == 0 else 3) * int(char) for index, char in enumerate(normalized)
+            )
+            % 10
+            == 0
+        )
 
-    def _selected_locations(self) -> list[str]:
-        locations: list[str] = []
-        if self.usa_checkbox.isChecked():
-            locations.append("USA")
-        if self.worldwide_checkbox.isChecked():
-            locations.append("Worldwide")
-        return locations
+    def _request_from_panel(self) -> SearchRequest | None:
+        locations = self.search_panel.selected_locations
+        if not locations:
+            QMessageBox.warning(self, "Choose a location", "Select at least one location filter.")
+            return None
+        if self.search_panel.query_type == QueryType.ISBN:
+            isbn = self.isbn_input.text().strip()
+            if not self.validate_isbn(isbn):
+                QMessageBox.warning(self, "Invalid ISBN", "Enter a valid ISBN-10 or ISBN-13.")
+                return None
+            query: str | tuple[str, str] = isbn
+        else:
+            title = self.title_input.text().strip()
+            author = self.author_input.text().strip()
+            if not title or not author:
+                QMessageBox.warning(
+                    self, "Title and author required", "Enter both a title and an author."
+                )
+                return None
+            query = (title, author)
+        return SearchRequest(
+            self.search_panel.query_type,
+            query,
+            locations,
+            self.app_settings.server_timeout_seconds,
+        )
 
-    def _ensure_search_prereqs(self) -> list[ServerConfig] | None:
-        if not is_yaz_client_installed(self.app_settings.yaz_executable):
+    def _start_search_from_panel(self) -> None:
+        request = self._request_from_panel()
+        if request is None:
+            return
+        if not self.engine.available:
             QMessageBox.critical(
                 self,
-                "Dependency Missing",
-                "Configured yaz-client executable was not found. Update the path in Settings.",
+                "Protocol engine unavailable",
+                "The embedded YAZ library could not be loaded. Reinstall the complete application.",
             )
-            return None
-        if not self.servers and not self._load_servers():
-            return None
-        selected_locations = self._selected_locations()
-        if not selected_locations:
-            QMessageBox.warning(self, "Selection Error", "Select at least one location filter.")
-            return None
-        filtered = [server for server in self.servers if server.location in selected_locations]
+            return
+        filtered = [server for server in self.servers if server.location in request.locations]
         if not filtered:
-            QMessageBox.warning(
-                self,
-                "Filter Error",
-                "No servers match the selected location filters.",
-            )
-            return None
-        return filtered
+            QMessageBox.warning(self, "No servers", "No active servers match those locations.")
+            return
+        session = SearchSession(request)
+        self.search_state.reset(session)
+        self._successful_servers = 0
+        self._failed_servers = 0
+        self._search_running = True
+        self.results_panel.reset(len(filtered))
+        self.record_panel.clear()
+        self.search_panel.set_searching(True)
+        self._status_bar.showMessage(f"Searching {len(filtered)} servers…")
+        self.log_message(f"Starting search across {len(filtered)} active servers.")
+        self.coordinator.start(session, filtered, self.app_settings.max_concurrent_queries)
 
     def _start_isbn_search(self) -> None:
-        query = self.isbn_input.text().strip()
-        if not query:
-            QMessageBox.warning(self, "Input Error", "Please enter an ISBN.")
-            return
-        if not self.validate_isbn(query):
-            QMessageBox.warning(
-                self,
-                "Validation Error",
-                "Invalid ISBN. Please enter a valid ISBN.",
-            )
-            return
-        self.search_state.current_query_type = QueryType.ISBN
-        self.search_state.current_query = query
-        self._start_search()
+        self.search_panel.tabs.setCurrentIndex(0)
+        self._start_search_from_panel()
 
     def _start_title_author_search(self) -> None:
-        title = self.title_input.text().strip()
-        author = self.author_input.text().strip()
-        if not title or not author:
-            QMessageBox.warning(self, "Input Error", "Please enter both Title and Author.")
-            return
-        self.search_state.current_query_type = QueryType.TITLE_AUTHOR
-        self.search_state.current_query = (title, author)
-        self._start_search()
+        self.search_panel.tabs.setCurrentIndex(1)
+        self._start_search_from_panel()
 
     def _start_search(self) -> None:
-        filtered_servers = self._ensure_search_prereqs()
-        if (
-            filtered_servers is None
-            or self.search_state.current_query_type is None
-            or self.search_state.current_query is None
-        ):
+        self._start_search_from_panel()
+
+    @Slot(object)
+    def _handle_server_change(self, result: ServerResult) -> None:
+        session = self.search_state.session
+        if session is None or result.session_id != session.id:
             return
+        self.results_panel.update_result(result)
+        if result.status == ServerStatus.SUCCESS:
+            self._successful_servers += 1
+            self.log_message(
+                f"{result.server.name} returned {result.number_of_hits:,} matching records."
+            )
+        elif result.status in {ServerStatus.FAILED, ServerStatus.TIMED_OUT}:
+            self._failed_servers += 1
+            self.log_message(result.message or f"{result.server.name}: {result.status.value}")
 
-        self.worker_manager.cleanup_worker_thread()
-        self.next_record_worker_manager.cleanup_worker_thread()
-        self.fetch_in_progress = False
-        self.search_state.reset_results()
-        self.results_window.clear()
-        self.record_details_window.clear()
-        self.download_button.setEnabled(False)
-        self.progress_bar.setValue(0)
-        self._manage_navigation_buttons(False, False)
+    @Slot(object)
+    def _handle_progress(self, progress: SearchProgress) -> None:
+        session = self.search_state.session
+        if session and progress.session_id == session.id:
+            self.results_panel.set_progress(progress.completed, progress.total, progress.percentage)
 
+    @Slot(object)
+    def _handle_search_finished(self, session_id: UUID) -> None:
+        session = self.search_state.session
+        if session is None or session.id != session_id or not self._search_running:
+            return
+        self._search_running = False
+        self.search_panel.set_searching(False)
+        self.results_panel.finish()
+        self._status_bar.showMessage(
+            f"Search complete · {self._successful_servers} servers with records"
+        )
         self.log_message(
-            f"Starting {self.search_state.current_query_type.value} search with query: "
-            f"{self.search_state.current_query}"
+            f"Search complete: {self._successful_servers} available; "
+            f"{self._failed_servers} failed or timed out."
         )
-        query_type = self.search_state.current_query_type
-        query = self.search_state.current_query
-        assert query_type is not None
-        assert query is not None
-
-        def factory() -> Worker:
-            return Worker(
-                WorkerConfig(
-                    servers=filtered_servers,
-                    query_type=query_type,
-                    query=query,
-                    start=1,
-                    timeout_seconds=self.app_settings.server_timeout_seconds,
-                    max_threads=self.app_settings.max_concurrent_queries,
-                ),
-                self._make_yaz_client,
-            )
-
-        self.worker_manager.worker_info.worker, self.worker_manager.worker_info.thread = (
-            self.worker_manager.create_worker_thread(
-                factory,
-                {
-                    "progress": self.progress_bar.setValue,
-                    "log_message": self.log_message,
-                    "result_found": self._display_result,
-                    "finished": self._on_worker_finished,
-                    "error": self._handle_worker_error,
-                },
-            )
-        )
-        self._toggle_search_buttons(False)
-
-    def _make_yaz_client(self) -> YAZClient:
-        return YAZClient(self.app_settings.yaz_executable)
-
-    def _toggle_search_buttons(self, enabled: bool) -> None:
-        self.search_isbn_button.setEnabled(enabled)
-        self.search_title_author_button.setEnabled(enabled)
-        self.cancel_button.setEnabled(not enabled)
-
-    def _manage_navigation_buttons(self, prev_enabled: bool, next_enabled: bool) -> None:
-        self.prev_record_button.setEnabled(prev_enabled)
-        self.next_record_button.setEnabled(next_enabled)
 
     def _cancel_search(self) -> None:
-        self.worker_manager.cleanup_worker_thread()
-        self.next_record_worker_manager.cleanup_worker_thread()
-        self.progress_bar.setValue(0)
-        self.fetch_in_progress = False
-        self._toggle_search_buttons(True)
-        self._update_navigation_buttons()
-        self.log_message("Search cancelled.")
+        self.coordinator.cancel()
+        self._search_running = False
+        self.search_state.fetch_in_progress = False
+        self.search_panel.set_searching(False)
+        self.results_panel.finish(canceled=True)
+        self._status_bar.showMessage("Search canceled")
+        self.log_message("Search canceled; native session cleanup requested.")
 
-    def _on_worker_finished(self) -> None:
-        canceled = bool(
-            self.worker_manager.worker_info.worker
-            and getattr(self.worker_manager.worker_info.worker, "cancel_requested", False)
-        )
-        self.worker_manager.cleanup_worker_thread()
-        self._toggle_search_buttons(True)
-        self.fetch_in_progress = False
-        if canceled:
-            self.progress_bar.setValue(0)
-        else:
-            self.progress_bar.setValue(100)
-            self.log_message("Search completed.")
-        self._update_navigation_buttons()
-
-    def _handle_worker_error(self, message: str) -> None:
-        self.log_message(f"Error: {message}")
-        QMessageBox.warning(self, "Search Error", message)
-        self._toggle_search_buttons(True)
-        self.fetch_in_progress = False
-
-    def _display_result(self, result: SearchResult) -> None:
-        item = QListWidgetItem(f"{result.summary} - {result.number_of_hits} hits")
-        item.setData(Qt.ItemDataRole.UserRole, result)
-        self.results_window.addItem(item)
-        self.log_message(f"Displaying result from {result.summary}")
-
-    def _on_result_clicked(self, item: QListWidgetItem) -> None:
-        result = cast(SearchResult, item.data(Qt.ItemDataRole.UserRole))
-        record = extract_marc_record(
-            result.raw_data,
-            trim_records=self.app_settings.trim_records,
-            log_callback=self.log_message,
-        )
-        self.search_state.current_server_info = result.server
-        self.search_state.current_marc_records = [record] if record else []
-        self.search_state.current_record_index = 0
-        self.search_state.total_records = result.number_of_hits
+    def _select_result(self, result: ServerResult) -> None:
+        session = self.search_state.session
+        if session is None or result.session_id != session.id or result.record is None:
+            return
+        self.search_state.select(result, result.record)
         self._display_current_record()
 
     def _display_current_record(self) -> None:
-        if self.search_state.current_marc_records and self.search_state.current_record_index < len(
-            self.search_state.current_marc_records
-        ):
-            record = self.search_state.current_marc_records[self.search_state.current_record_index]
-            self.record_details_window.setPlainText(format_record_for_display(record))
-            self.download_button.setEnabled(True)
-            self.log_message("Record displayed.")
-        else:
-            self.record_details_window.setPlainText("No record available.")
-            self.download_button.setEnabled(False)
-            self.log_message("No record available to display.")
-        self._update_navigation_buttons()
-
-    def _update_navigation_buttons(self) -> None:
-        self._manage_navigation_buttons(
-            self.search_state.current_record_index > 0,
-            self.search_state.current_record_index < self.search_state.total_records - 1,
+        result = self.search_state.selected_result
+        record = self.search_state.current_marc_record
+        if result is None or record is None:
+            self.record_panel.clear()
+            return
+        self.record_panel.show_record(
+            result.server.name,
+            self.search_state.current_position,
+            result.number_of_hits,
+            format_record_for_display(record, trim_records=self.app_settings.trim_records),
+            trimmed_export=self.app_settings.trim_records,
         )
 
-    def _show_next_record(self) -> None:
-        if self.fetch_in_progress:
-            QMessageBox.information(
-                self,
-                "Info",
-                "Next record is already being fetched. Please wait.",
-            )
-            return
-
-        if self.search_state.current_record_index + 1 < len(self.search_state.current_marc_records):
-            self.search_state.current_record_index += 1
+    def _show_previous_record(self) -> None:
+        if not self.search_state.fetch_in_progress and self.search_state.current_position > 1:
+            self.search_state.current_position -= 1
             self._display_current_record()
-            return
-
-        if (
-            self.search_state.current_server_info is None
-            or self.search_state.current_query_type is None
-            or self.search_state.current_query is None
-        ):
-            return
-
-        if self.search_state.current_record_index + 1 >= self.search_state.total_records:
-            QMessageBox.information(self, "Info", "No more records to display.")
-            return
-
-        self.fetch_in_progress = True
-        self._manage_navigation_buttons(False, False)
-        self.next_record_worker_manager.cleanup_worker_thread()
-
-        start = self.search_state.current_record_index + 2
-        server_info = self.search_state.current_server_info
-        query_type = self.search_state.current_query_type
-        query = self.search_state.current_query
-        assert server_info is not None
-        assert query_type is not None
-        assert query is not None
-
-        def factory() -> NextRecordWorker:
-            return NextRecordWorker(
-                NextRecordWorkerConfig(
-                    server_info=server_info,
-                    query_type=query_type,
-                    query=query,
-                    start=start,
-                    timeout_seconds=self.app_settings.server_timeout_seconds,
-                    trim_records=self.app_settings.trim_records,
-                ),
-                self._make_yaz_client,
-            )
-
-        (
-            self.next_record_worker_manager.worker_info.worker,
-            self.next_record_worker_manager.worker_info.thread,
-        ) = self.next_record_worker_manager.create_worker_thread(
-            factory,
-            {
-                "record_fetched": self._handle_next_record_fetched,
-                "error": self._handle_next_record_error,
-                "finished": self._on_next_record_worker_finished,
-                "log_message": self.log_message,
-            },
-        )
-
-    def _handle_next_record_fetched(self, record: Record) -> None:
-        self.search_state.current_marc_records.append(record)
-        self.search_state.current_record_index += 1
-        self._display_current_record()
-
-    def _handle_next_record_error(self, message: str) -> None:
-        self.log_message(f"Error fetching next record: {message}")
-        QMessageBox.warning(self, "Record Fetch Error", message)
-        self.fetch_in_progress = False
-        self._update_navigation_buttons()
-
-    def _on_next_record_worker_finished(self) -> None:
-        self.next_record_worker_manager.cleanup_worker_thread()
-        self.fetch_in_progress = False
-        self._update_navigation_buttons()
 
     def _show_prev_record(self) -> None:
-        if self.search_state.current_record_index == 0:
-            QMessageBox.information(self, "Info", "Already at the first record.")
+        self._show_previous_record()
+
+    def _show_next_record(self) -> None:
+        result = self.search_state.selected_result
+        session = self.search_state.session
+        if (
+            result is None
+            or session is None
+            or self.search_state.fetch_in_progress
+            or self.search_state.current_position >= result.number_of_hits
+        ):
             return
-        self.search_state.current_record_index -= 1
+        position = self.search_state.current_position + 1
+        cached = self.search_state.records.get((result.server.id, position))
+        if cached:
+            self.search_state.current_position = position
+            self._display_current_record()
+            return
+        self.search_state.fetch_in_progress = True
+        self.record_panel.show_loading(result.server.name, position, result.number_of_hits)
+        self.coordinator.fetch_record(RecordReference(session.id, result.server, position))
+
+    @Slot(object, object)
+    def _handle_record_fetched(
+        self, reference: RecordReference, outcome: MarcRecord | BackendFailure
+    ) -> None:
+        session = self.search_state.session
+        if session is None or reference.session_id != session.id:
+            return
+        self.search_state.fetch_in_progress = False
+        if isinstance(outcome, BackendFailure):
+            if outcome.kind != FailureKind.CANCELED:
+                self.log_message(f"Record fetch failed: {outcome.message}")
+                QMessageBox.warning(self, "Record fetch failed", outcome.message)
+            self._display_current_record()
+            return
+        self.search_state.records[reference.cache_key] = outcome
+        self.search_state.current_position = reference.position
         self._display_current_record()
 
-    def _download_marc_record(self) -> None:
-        if not self.search_state.current_marc_records:
-            QMessageBox.warning(self, "Error", "No MARC record to save.")
+    def _export_record(self) -> None:
+        record = self.search_state.current_marc_record
+        if record is None:
             return
-
-        record = self.search_state.current_marc_records[self.search_state.current_record_index]
-        if not isinstance(record, Record):
-            QMessageBox.warning(self, "Error", "Invalid MARC record format.")
-            return
-
         author, title = get_record_info(record)
-        suggested_name = sanitize_filename(f"{author}_{title}") + ".mrc"
-        default_directory = Path(self.app_settings.default_save_directory).expanduser()
-        if not default_directory.exists():
-            default_directory = Path.home()
-        default_path = default_directory / suggested_name
-
+        suggested = sanitize_filename(f"{author}_{title}") + ".mrc"
+        directory = Path(self.app_settings.default_save_directory).expanduser()
         file_name, _ = QFileDialog.getSaveFileName(
             self,
-            "Save MARC Record",
-            str(default_path),
-            "MARC Files (*.mrc)",
+            "Export trimmed MARC record"
+            if self.app_settings.trim_records
+            else "Export MARC record",
+            str(directory / suggested),
+            "MARC records (*.mrc)",
         )
         if not file_name:
             return
         try:
-            Path(file_name).write_bytes(record.as_marc())
-        except OSError as exc:
-            QMessageBox.warning(self, "Save Error", f"Failed to save file: {exc}")
-            self.log_message(f"Failed to save MARC record to {file_name}: {exc}")
+            Path(file_name).write_bytes(
+                record_bytes_for_export(record, trim_records=self.app_settings.trim_records)
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Export failed", str(exc))
             return
+        mode = "trimmed" if self.app_settings.trim_records else "original"
+        self.log_message(f"Exported {mode} MARC record to {file_name}.")
 
-        self.log_message(f"MARC record saved to {file_name}.")
-        QMessageBox.information(self, "Success", "MARC record saved successfully.")
+    def _download_marc_record(self) -> None:
+        self._export_record()
 
-    def closeEvent(self, event: Any) -> None:  # noqa: N802
-        self.worker_manager.cleanup_worker_thread()
-        self.next_record_worker_manager.cleanup_worker_thread()
-        self.fetch_in_progress = False
-        self.search_state.reset_results()
-        event.accept()
+    def _open_project_repository(self) -> None:
+        QDesktopServices.openUrl(QUrl(PROJECT_REPOSITORY_URL))
+
+    def _open_settings_dialog(self) -> None:
+        dialog = SettingsDialog(
+            self.app_settings,
+            engine_version=self.engine.version,
+            catalog_version=self.catalog_document.catalog_version,
+            parent=self,
+        )
+        if dialog.exec() != QDialog.DialogCode.Accepted or dialog.saved_settings is None:
+            return
+        old = self.app_settings
+        candidate = dialog.saved_settings
+        self.app_settings = AppSettings(
+            max_concurrent_queries=candidate.max_concurrent_queries,
+            server_timeout_seconds=candidate.server_timeout_seconds,
+            default_save_directory=candidate.default_save_directory,
+            trim_records=candidate.trim_records,
+            theme=candidate.theme,
+            automatic_catalog_updates=candidate.automatic_catalog_updates,
+            disabled_server_ids=old.disabled_server_ids,
+            last_catalog_check_at=old.last_catalog_check_at,
+        ).normalized()
+        application = cast(QApplication | None, QApplication.instance())
+        if application is not None:
+            apply_theme(application, self.app_settings.theme)
+        self.results_panel.refresh_theme()
+        if dialog.legacy_catalog_path:
+            try:
+                imported = self.catalog_repository.import_legacy_file(dialog.legacy_catalog_path)
+            except (OSError, ValueError) as exc:
+                QMessageBox.warning(self, "Catalog import failed", str(exc))
+            else:
+                self.log_message(f"Imported {len(imported)} custom servers.")
+        self.settings_store.save(self.app_settings)
+        self._reload_catalog()
+        self._display_current_record()
+        self.log_message("Settings saved and applied.")
+
+    def _check_catalog_update(self) -> None:
+        if self._update_task is not None:
+            return
+        self.log_message("Checking the signed server catalog for updates…")
+        task = _CatalogUpdateTask(self.catalog_repository)
+        task.signals.completed.connect(self._catalog_update_completed)
+        task.signals.failed.connect(self._catalog_update_failed)
+        self._update_task = task
+        QThreadPool.globalInstance().start(task)
+
+    @Slot(object)
+    def _catalog_update_completed(self, updated: object) -> None:
+        self._update_task = None
+        self.app_settings = AppSettings(
+            max_concurrent_queries=self.app_settings.max_concurrent_queries,
+            server_timeout_seconds=self.app_settings.server_timeout_seconds,
+            default_save_directory=self.app_settings.default_save_directory,
+            trim_records=self.app_settings.trim_records,
+            theme=self.app_settings.theme,
+            automatic_catalog_updates=self.app_settings.automatic_catalog_updates,
+            disabled_server_ids=self.app_settings.disabled_server_ids,
+            last_catalog_check_at=datetime.now(UTC),
+        )
+        self.settings_store.save(self.app_settings)
+        if updated is None:
+            self.log_message("The server catalog is already current.")
+            return
+        self._reload_catalog()
+        self.log_message(
+            f"Installed catalog {self.catalog_document.catalog_version} with "
+            f"{len(self.servers)} active servers."
+        )
+
+    @Slot(str)
+    def _catalog_update_failed(self, message: str) -> None:
+        self._update_task = None
+        self.app_settings = AppSettings(
+            max_concurrent_queries=self.app_settings.max_concurrent_queries,
+            server_timeout_seconds=self.app_settings.server_timeout_seconds,
+            default_save_directory=self.app_settings.default_save_directory,
+            trim_records=self.app_settings.trim_records,
+            theme=self.app_settings.theme,
+            automatic_catalog_updates=self.app_settings.automatic_catalog_updates,
+            disabled_server_ids=self.app_settings.disabled_server_ids,
+            last_catalog_check_at=datetime.now(UTC),
+        )
+        self.settings_store.save(self.app_settings)
+        self.log_message(f"Catalog update was not installed: {message}")
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:  # noqa: N802
+        self.coordinator.shutdown()
+        if event is not None:
+            event.accept()
 
 
 def build_application() -> QApplication:
-    """Create the Qt application object with stable settings metadata."""
     app = cast(QApplication | None, QApplication.instance())
     if app is None:
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs)
         app = QApplication(sys.argv)
     app.setOrganizationName("z3950_search_for_marc")
     app.setApplicationName("z3950_search_for_marc")
+    app.setApplicationDisplayName(APPLICATION_DISPLAY_NAME)
+    apply_theme(app)
     return app
 
 
-def run() -> int:
-    """Launch the main application window."""
+def run(*, smoke_test: bool = False) -> int:
     app = build_application()
-    window = Z3950SearchApp()
+    try:
+        window = Z3950SearchApp()
+    except (OSError, ValueError) as exc:
+        QMessageBox.critical(
+            None,
+            "Z39.50 MARC Search could not start",
+            f"No valid server catalog or settings could be loaded.\n\n{exc}",
+        )
+        return 1
     window.show()
+    if smoke_test:
+        QTimer.singleShot(500, app.quit)
     return app.exec()

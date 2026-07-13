@@ -1,226 +1,171 @@
-"""MARC parsing and formatting helpers."""
+"""Lossless MARC parsing, display formatting, and explicit export trimming."""
 
 from __future__ import annotations
 
+import copy
+import io
 import os
 import re
 from collections.abc import Callable
 
-from pymarc import Field, Record, Subfield
-from pymarc.field import Indicators
+from pymarc import MARCReader, Record
+
+from .domain.models import MarcRecord
 
 LogCallback = Callable[[str], None]
 
-_ENCODINGS_TO_TRY = ("utf-8", "cp850", "cp1252", "latin-1")
+
+class MarcParseError(ValueError):
+    pass
 
 
-def log(log_callback: LogCallback | None, message: str) -> None:
-    """Emit a log message if a callback is available."""
-    if log_callback:
-        log_callback(message)
+def parse_marc(
+    raw_bytes: bytes,
+    *,
+    charset_override: str = "auto",
+    log_callback: LogCallback | None = None,
+) -> MarcRecord:
+    if not raw_bytes:
+        raise MarcParseError("The server returned an empty MARC record.")
+    attempts: list[tuple[bytes, str, str]] = [(raw_bytes, "strict", "iso8859-1")]
+    if charset_override.casefold() not in {"", "auto", "marc-8", "marc8", "utf-8"}:
+        override_bytes = bytearray(raw_bytes)
+        # A known-bad target may claim UTF-8 in leader/09 while returning a legacy code page.
+        # The parse copy lets PyMARC apply the override while raw_bytes remains exact.
+        if len(override_bytes) > 9:
+            override_bytes[9] = ord(" ")
+        attempts.append((bytes(override_bytes), "strict", charset_override))
+    attempts.append((raw_bytes, "replace", "iso8859-1"))
+    last_error: Exception | None = None
+    for index, (parse_bytes, utf8_handling, file_encoding) in enumerate(attempts):
+        try:
+            reader = MARCReader(
+                io.BytesIO(parse_bytes),
+                to_unicode=True,
+                force_utf8=False,
+                utf8_handling=utf8_handling,
+                file_encoding=file_encoding,
+            )
+            record = next(reader)
+            if record is None:
+                raise MarcParseError("PyMARC rejected the server record as malformed.")
+            if index and log_callback:
+                mode = (
+                    f"the {charset_override} catalog override"
+                    if file_encoding != "iso8859-1"
+                    else "replacement decoding"
+                )
+                log_callback(f"Record used {mode} after standard MARC decoding failed.")
+            return MarcRecord(record, bytes(raw_bytes))
+        except (StopIteration, UnicodeDecodeError, ValueError) as exc:
+            last_error = exc
+    raise MarcParseError(f"Could not parse the ISO2709 record: {last_error}")
 
 
-def is_yaz_client_installed(executable: str) -> bool:
-    """Check if the configured yaz executable is available."""
-    from subprocess import DEVNULL, CalledProcessError, run
-
-    try:
-        run([executable, "-V"], stdout=DEVNULL, stderr=DEVNULL, check=True)
-        return True
-    except (CalledProcessError, FileNotFoundError, OSError):
-        return False
+def should_trim_tag(tag: str) -> bool:
+    return tag.isdigit() and (int(tag) < 10 or int(tag) >= 900)
 
 
-def decode_yaz_output(raw_output: bytes) -> str:
-    """Decode yaz-client output, preferring decodings with fewer replacement artifacts."""
-    best_text = raw_output.decode("utf-8", errors="replace")
-    best_score = _score_decoded_text(best_text)
-    for encoding in _ENCODINGS_TO_TRY:
-        text = raw_output.decode(encoding, errors="replace")
-        score = _score_decoded_text(text)
-        if score > best_score:
-            best_text = text
-            best_score = score
-    return best_text
+def trimmed_copy(record: Record) -> Record:
+    clone = copy.deepcopy(record)
+    tags = sorted({field.tag for field in clone.fields if should_trim_tag(field.tag)})
+    if tags:
+        clone.remove_fields(*tags)
+    return clone
 
 
-def _score_decoded_text(text: str) -> int:
-    printable = sum(char.isprintable() or char in "\r\n\t" for char in text)
-    penalty = text.count("\ufffd") * 10 + text.count("÷") * 2 + text.count("Σ") * 2
-    return printable - penalty
+def record_bytes_for_export(record: MarcRecord, *, trim_records: bool) -> bytes:
+    if not trim_records:
+        return record.raw_bytes
+    return trimmed_copy(record.parsed).as_marc()
 
 
-def clean_yaz_output(raw_data: str) -> str:
-    """Return only MARC-like output lines."""
-    marc_lines = [
-        line
-        for line in raw_data.splitlines()
-        if len(line) >= 4 and line[:3].isdigit() and line[3] == " "
-    ]
-    return "\n".join(marc_lines)
+def format_record_for_display(record: Record | MarcRecord, *, trim_records: bool = False) -> str:
+    parsed = record.parsed if isinstance(record, MarcRecord) else record
+    visible = trimmed_copy(parsed) if trim_records else parsed
+    lines = [f"LDR    {visible.leader}"]
+    for field in visible.fields:
+        if field.is_control_field():
+            lines.append(f"{field.tag}    {field.data}")
+            continue
+        indicators = "".join(field.indicators or (" ", " "))
+        subfields = " ".join(f"${subfield.code} {subfield.value}" for subfield in field.subfields)
+        lines.append(f"{field.tag} {indicators} {subfields}".rstrip())
+    return "\n".join(lines)
 
 
-def sanitize_filename(filename: str, max_length: int = 255) -> str:
-    """Return a filesystem-safe filename."""
+def sanitize_filename(filename: str, max_length: int = 180) -> str:
     forbidden_chars = r'<>:"/\|?*' if os.name == "nt" else r"/"
     sanitized = re.sub(f"[{re.escape(forbidden_chars)}]", "_", filename)
-    sanitized = re.sub(r"[^\w\s\-_.]", "", sanitized)
+    sanitized = re.sub(r"[^\w\s\-_.]", "", sanitized, flags=re.UNICODE)
     sanitized = re.sub(r"\s+", "_", sanitized).strip("._")
     sanitized = re.sub(r"_+", "_", sanitized)
-    if len(sanitized) > max_length:
-        sanitized = sanitized[:max_length].rstrip("_")
-    return sanitized or "MARC_Record"
+    return sanitized[:max_length].rstrip("_") or "MARC_Record"
 
 
-def get_record_info(record: Record) -> tuple[str, str]:
-    """Return sanitized author and title metadata for the current record."""
+def get_record_info(record: Record | MarcRecord) -> tuple[str, str]:
+    parsed = record.parsed if isinstance(record, MarcRecord) else record
     author = "MARC_Record"
     title = "MARC_Record"
-
-    for field in record.get_fields("100", "110", "111"):
-        subfield_a = field.get_subfields("a")
-        if subfield_a:
-            author = sanitize_filename(" ".join(re.sub(r"[^\w\s]", "", subfield_a[0]).split()[:3]))
+    for field in parsed.get_fields("100", "110", "111"):
+        values = field.get_subfields("a")
+        if values:
+            author = sanitize_filename(" ".join(values[0].split()[:3]))
             break
-
-    title_fields = record.get_fields("245")
+    title_fields = parsed.get_fields("245")
     if title_fields:
-        subfield_a = title_fields[0].get_subfields("a")
-        if subfield_a:
-            title = sanitize_filename(" ".join(re.sub(r"[^\w\s]", "", subfield_a[0]).split()[:4]))
-
+        values = title_fields[0].get_subfields("a")
+        if values:
+            title = sanitize_filename(" ".join(values[0].split()[:4]))
     return author, title
 
 
-def format_record_for_display(record: Record) -> str:
-    """Format a MARC record for the UI details panel."""
-    formatted_record: list[str] = []
-    for field in record.fields:
-        if field.is_control_field():
-            formatted_record.append(f"{field.tag}    {field.data}")
-            continue
-
-        indicators = "".join(field.indicators)
-        subfields = " ".join(f"${subfield.code} {subfield.value}" for subfield in field.subfields)
-        formatted_record.append(f"{field.tag} {indicators} {subfields}".rstrip())
-    return "\n".join(formatted_record)
-
-
-def _is_valid_marc_line(line: str) -> bool:
-    return len(line) >= 4 and line[:3].isdigit() and line[3] == " "
-
-
-def _extract_and_validate_tag(line: str) -> tuple[str, int] | None:
-    tag = line[:3]
-    try:
-        tag_int = int(tag)
-    except ValueError:
-        return None
-    return tag, tag_int
-
-
-def _parse_indicators(indicators_str: str) -> list[str]:
-    if len(indicators_str) == 2:
-        return [indicators_str[0], indicators_str[1]]
-    return [" ", " "]
-
-
-def _remove_malformed_dollars(line_content: str, log_callback: LogCallback | None) -> str:
-    while "$$" in line_content:
-        start_pos = line_content.index("$$")
-        end_pos = line_content.find("$", start_pos + 2)
-        removed_content = (
-            line_content[start_pos:] if end_pos == -1 else line_content[start_pos:end_pos]
-        )
-        line_content = (
-            line_content[:start_pos]
-            if end_pos == -1
-            else line_content[:start_pos] + line_content[end_pos:]
-        )
-        log(log_callback, f"Malformed '$$' detected and corrected: '{removed_content}'")
-    return line_content
-
-
-def _parse_subfields(
-    line_content: str,
-    original_line: str,
-    log_callback: LogCallback | None,
-) -> list[Subfield]:
-    subfields_parts = line_content.split("$")[1:]
-    subfields: list[Subfield] = []
-    valid_codes = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-    for part in subfields_parts:
-        part = part.strip()
-        if len(part) < 2:
-            log(
-                log_callback,
-                f"Incomplete subfield detected and skipped in line: '{original_line}'",
-            )
-            continue
-        code = part[0]
-        value = part[1:].strip()
-        if code not in valid_codes:
-            log(log_callback, f"Invalid subfield code '{code}' skipped in line: '{original_line}'")
-            continue
-        if not value:
-            log(log_callback, f"Empty subfield '{code}' skipped in line: '{original_line}'")
-            continue
-        subfields.append(Subfield(code=code, value=value))
-
-    return subfields
-
-
-def _should_trim_tag(tag_int: int, trim_records: bool) -> bool:
-    return trim_records and (tag_int < 10 or tag_int >= 900)
-
-
-def _process_line(
-    line: str,
-    record: Record,
-    trim_records: bool,
-    log_callback: LogCallback | None,
-) -> None:
-    if not _is_valid_marc_line(line):
-        log(log_callback, f"Skipping invalid MARC line: '{line}'")
-        return
-
-    tag_info = _extract_and_validate_tag(line)
-    if not tag_info:
-        log(log_callback, f"Invalid tag in line: '{line}'")
-        return
-
-    tag, tag_int = tag_info
-    if _should_trim_tag(tag_int, trim_records):
-        return
-
-    line_content = line[7:].strip()
-
-    if tag_int < 10:
-        record.add_field(Field(tag=tag, data=line_content))
-        return
-
-    indicators = Indicators(*_parse_indicators(line[4:6]))
-    sanitized_line = _remove_malformed_dollars(line_content, log_callback)
-    subfields = _parse_subfields(sanitized_line, line, log_callback)
-    if subfields:
-        record.add_field(Field(tag=tag, indicators=indicators, subfields=subfields))
-    else:
-        log(log_callback, f"No valid subfields found for tag {tag}. Field not added.")
-
-
+# Compatibility helpers for v1 tests and third-party imports. Text line parsing is intentionally
+# no longer used by the application; it exists only to import old fixtures.
 def extract_marc_record(
     raw_data: str,
     *,
     trim_records: bool,
     log_callback: LogCallback | None = None,
 ) -> Record | None:
-    """Parse a MARC record from cleaned YAZ output."""
+    from pymarc import Field, Indicators, Subfield
+
     record = Record()
     for line in raw_data.splitlines():
-        _process_line(line, record, trim_records, log_callback)
+        if len(line) < 4 or not line[:3].isdigit() or line[3] != " ":
+            continue
+        tag = line[:3]
+        if trim_records and should_trim_tag(tag):
+            continue
+        if int(tag) < 10:
+            record.add_field(Field(tag=tag, data=line[4:].strip()))  # type: ignore[no-untyped-call]
+            continue
+        content = line[7:].strip()
+        parts = content.split("$")[1:]
+        subfields = [
+            Subfield(code=part[0], value=part[1:].strip())
+            for part in parts
+            if len(part.strip()) >= 2
+        ]
+        if subfields:
+            record.add_field(  # type: ignore[no-untyped-call]
+                Field(tag=tag, indicators=Indicators(*(line[4:6] or "  ")), subfields=subfields)
+            )
+    return record if record.fields else None
 
-    if not record.fields:
-        log(log_callback, "No valid fields found in the record.")
-        return None
-    return record
+
+def decode_yaz_output(raw_output: bytes) -> str:
+    return raw_output.decode("utf-8", errors="replace")
+
+
+def clean_yaz_output(raw_data: str) -> str:
+    return "\n".join(
+        line
+        for line in raw_data.splitlines()
+        if len(line) >= 4 and line[:3].isdigit() and line[3] == " "
+    )
+
+
+def is_yaz_client_installed(_executable: str) -> bool:
+    """Deprecated: v2 embeds YAZ and never searches PATH for yaz-client."""
+    return False

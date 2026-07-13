@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "minimum_schema_version": 2,
+  "catalog_version": "2026.07.13.2",
+  "published_at": "2026-07-13T17:02:02.678278Z",
+  "catalog_url": "https://jspann21.github.io/z3950_search_for_marc/catalog/v2/servers.v2.json",
+  "sha256": "e8caaedd9bb32310ca2fc94517d03e85267602798b93e0691df8a24a4c72a064",
+  "signature": "1dEMqEjkjVtC7OiByywRIbs5yS2KElu/OrJ7zBPb30ArDRtqD5qKFAnPL/d7/XM1lNWRMAR7B8lWpmde6vByBg=="
+}
