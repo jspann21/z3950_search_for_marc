@@ -55,7 +55,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
     parser.add_argument("destination", type=Path)
-    parser.add_argument("--version", default="2026.07.13.1")
+    parser.add_argument("--version", default="2026.07.13.2")
     args = parser.parse_args()
     document = convert(args.source, args.version)
     args.destination.parent.mkdir(parents=True, exist_ok=True)

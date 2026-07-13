@@ -4,6 +4,24 @@
 publication tooling may omit non-active entries from a future active-only delivery while retaining
 them here for auditability.
 
+## July 2026 manual refresh
+
+The 2026-07-13 refresh tested every legacy definition twice on Windows with the application's own
+YAZ search, present, and MARC parsing path. It retired 175 obsolete, inaccessible, duplicate, or
+non-bibliographic definitions from the searchable catalog, updated seven existing definitions in
+place, and added 18 new definitions that passed two additional probes. The resulting catalog keeps
+390 historical definitions and publishes 215 active targets; all 215 passed a final clean-catalog
+probe.
+
+Connection research used the current
+[Library of Congress server guidelines](https://www.loc.gov/standards/z3950/lcserver.html), the
+[LOC-referenced Z-BRARY directory](https://www.z-brary.com/), the independently maintained
+[KohaSupport directory](https://kohasupport.com/resources/z3950/), and current provider pages such
+as [Oxford's Z39.50 configuration](https://www.bodleian.ox.ac.uk/collections-and-resources/solo/z39-50).
+Directory entries were discovery inputs only: no endpoint was activated unless it passed the local
+protocol and MARC probe. The supported LOC bibliographic targets are first in runtime order: LCDB at
+priority 0 and NLSBPH at priority 10.
+
 The daily workflow probes every non-retired endpoint from Windows and Linux. Each probe performs
 Z39.50 initialization, a valid Bib-1 search, and MARC validation when hits exist. A valid zero-hit
 response is healthy. Failures are recorded by typed category (DNS, connection, initialization,

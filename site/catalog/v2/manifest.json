@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
   "minimum_schema_version": 2,
-  "catalog_version": "2026.07.13.1",
-  "published_at": "2026-07-13T00:00:00Z",
+  "catalog_version": "2026.07.13.2",
+  "published_at": "2026-07-13T17:02:02.678278Z",
   "catalog_url": "https://jspann21.github.io/z3950_search_for_marc/catalog/v2/servers.v2.json",
-  "sha256": "a72779390fd261d975221b41a09b4673dc43b646ec298141ac9dc4ddf5e24fc8",
-  "signature": "UU2xqglBUz0cAqEvlJko4anw9wRmzz5BjJNXpOy/tGaW/tYL60bztcSYBuqjUxc6Xgy7kInRP6isoCAHi0ysCg=="
+  "sha256": "6a92cd0141cf3531a606e40b1af50e1ddf9a418bcc1c8c66ee0aaf5702d45b06",
+  "signature": "0gcjaB8kOuFTReTnovAdrdmh4XTasq96C98Gw90XjRBTLeFiHRWspr2jP3OGE7b0Sufr/+vPhmuoWknC+wsTBg=="
 }

@@ -23,15 +23,17 @@ from z3950_search_for_marc.resources import resource_path
 from .helpers import server, write_catalog
 
 
-def test_bundled_catalog_has_372_unique_servers() -> None:
+def test_bundled_catalog_has_expected_verified_inventory() -> None:
     repository = CatalogRepository()
     catalog = repository.load_upstream()
 
     assert catalog.schema_version == 2
-    assert len(catalog.servers) == 372
-    assert len({item.id for item in catalog.servers}) == 372
+    assert len(catalog.servers) == 390
+    assert len(catalog.active_servers) == 215
+    assert len({item.id for item in catalog.servers}) == 390
     assert all(isinstance(item.port, int) for item in catalog.servers)
-    assert catalog.servers[0].priority == 100
+    assert catalog.active_servers[0].name == "Library of Congress (LC Catalog)"
+    assert catalog.active_servers[0].priority == 0
 
 
 def test_legacy_import_is_stable_and_deduplicated() -> None:

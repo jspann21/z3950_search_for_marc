@@ -66,9 +66,10 @@ on a public server.
 ## Server catalog
 
 The bundled catalog is [`catalog/servers.v2.json`](catalog/servers.v2.json), validated by
-[`catalog/servers.v2.schema.json`](catalog/servers.v2.schema.json). Its 372 migrated endpoints have
-stable UUIDs, numeric ports, normalized endpoint uniqueness, status history, charset metadata, and
-Library of Congress priority.
+[`catalog/servers.v2.schema.json`](catalog/servers.v2.schema.json). It currently retains 390
+definitions for audit history and publishes 215 active, repeatedly verified endpoints. Definitions
+have stable UUIDs, numeric ports, normalized endpoint uniqueness, status history, charset metadata,
+and explicit Library of Congress priority.
 
 At most once every 24 hours—or when the user chooses Check now—the application fetches the
 manifest from the configured GitHub Pages HTTPS origin. It validates the final origin, Ed25519
