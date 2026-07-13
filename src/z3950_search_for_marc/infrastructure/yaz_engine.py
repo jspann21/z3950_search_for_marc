@@ -95,8 +95,14 @@ class ZoomSessionEngine:
             try:
                 global _DLL_DIRECTORY
                 native_directory = package_root() / "native"
-                if os.name == "nt" and native_directory.is_dir() and _DLL_DIRECTORY is None:
-                    _DLL_DIRECTORY = os.add_dll_directory(str(native_directory))
+                add_dll_directory = getattr(os, "add_dll_directory", None)
+                if (
+                    os.name == "nt"
+                    and native_directory.is_dir()
+                    and _DLL_DIRECTORY is None
+                    and add_dll_directory is not None
+                ):
+                    _DLL_DIRECTORY = add_dll_directory(str(native_directory))
                 self._native = import_module("z3950_search_for_marc._yaz_native")
             except (ImportError, OSError) as exc:
                 self._load_error = exc
