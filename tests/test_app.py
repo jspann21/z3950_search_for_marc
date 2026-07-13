@@ -42,5 +42,7 @@ def test_main_window_searches_and_displays_record(qtbot, tmp_path: Path) -> None
 
         assert window.engine.version == "test"
         assert window.download_button.isEnabled()
+        assert window.activity_panel.log.isHidden()
+        assert not window.search_panel.tabs.tabBar().usesScrollButtons()
     finally:
         window.close()

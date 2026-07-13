@@ -5,6 +5,7 @@
     Name="Z39.50 MARC Search"
     Version="2.0.0"
     Manufacturer="Jeremy Spann"
+    ProductCode="40CB1B14-D106-47DE-BCBD-76B06781C15E"
     UpgradeCode="5C76EA3A-534B-47F1-8CB2-72E937DF4B8F"
     Scope="perUser">
     <SummaryInformation Description="Self-contained Z39.50 MARC desktop search client" />

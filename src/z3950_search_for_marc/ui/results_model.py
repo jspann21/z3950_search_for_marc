@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
+from PySide6.QtGui import QBrush, QColor, QFont
 
 from ..domain.models import ServerResult, ServerStatus
 
@@ -49,6 +50,20 @@ class ResultsTableModel(QAbstractTableModel):
             return result
         if role == Qt.ItemDataRole.ToolTipRole:
             return result.message or result.server.summary
+        if role == Qt.ItemDataRole.TextAlignmentRole and index.column() == 2:
+            return Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        if role == Qt.ItemDataRole.ForegroundRole and index.column() == 3:
+            colors = {
+                ServerStatus.SUCCESS: "#166534",
+                ServerStatus.FAILED: "#b42318",
+                ServerStatus.TIMED_OUT: "#b45309",
+                ServerStatus.CANCELED: "#64748b",
+            }
+            return QBrush(QColor(colors.get(result.status, "#475569")))
+        if role == Qt.ItemDataRole.FontRole and index.column() == 3:
+            font = QFont()
+            font.setBold(True)
+            return font
         if role not in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return None
         values: tuple[object, ...] = (
