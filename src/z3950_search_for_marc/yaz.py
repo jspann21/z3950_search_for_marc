@@ -39,10 +39,7 @@ def build_search_command(query_type: QueryType, query: str | tuple[str, str]) ->
     title, author = query
     safe_title = sanitize_query_term(title)
     safe_author = sanitize_query_term(author)
-    return (
-        f'find @and @attr 1=4 @attr 4=1 "{safe_title}" '
-        f'@attr 1=1003 @attr 4=1 "{safe_author}"\n'
-    )
+    return f'find @and @attr 1=4 @attr 4=1 "{safe_title}" @attr 1=1003 @attr 4=1 "{safe_author}"\n'
 
 
 def creation_flags() -> int:
@@ -92,9 +89,7 @@ class YAZClient:
 
                 if process.returncode not in (0, None):
                     detail = (
-                        stderr_text.strip()
-                        or stdout_text.strip()
-                        or "Unknown yaz-client error."
+                        stderr_text.strip() or stdout_text.strip() or "Unknown yaz-client error."
                     )
                     raise YAZQueryError(f"Error querying {server.name}: {detail}")
 

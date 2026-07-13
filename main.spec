@@ -30,7 +30,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="z3950_search_for_marc",
+    name="z3950_search_for_marc-1.0.0",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

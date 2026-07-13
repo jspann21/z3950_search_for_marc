@@ -42,16 +42,13 @@ def test_sanitize_query_term_rejects_newlines() -> None:
 
 
 def test_build_search_command_escapes_quotes() -> None:
-    command = build_search_command(QueryType.TITLE_AUTHOR, ('He said "Hi"', 'Author'))
+    command = build_search_command(QueryType.TITLE_AUTHOR, ('He said "Hi"', "Author"))
 
     assert '\\"Hi\\"' in command
 
 
 def test_yaz_client_query_parses_hits(monkeypatch: pytest.MonkeyPatch) -> None:
-    stdout = (
-        b"Number of hits: 2, setno 1\n"
-        b"245 10 $a Test title\n"
-    )
+    stdout = b"Number of hits: 2, setno 1\n245 10 $a Test title\n"
     monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: FakeProcess(stdout))
     client = YAZClient("yaz-client")
     server = ServerConfig("Test", "example.org", 210, "books", "Worldwide")

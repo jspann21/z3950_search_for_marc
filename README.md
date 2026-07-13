@@ -1,159 +1,80 @@
-# Z39.50 MARC Record Search Application
+# Z39.50 MARC Search
 
-This repository contains a PyQt6-based graphical user interface (GUI) application designed to perform **Z39.50** searches across multiple servers to retrieve **MARC** records. The application supports searches by **ISBN** and **Title/Author**, filters servers based on location (**USA** or **Worldwide**), lets users review and save returned MARC records, and now includes persistent application settings, automated tests, and a modern Python packaging layout.
+A Windows-first desktop application for searching many Z39.50 library servers, reviewing
+MARC records, and exporting individual records as binary `.mrc` files.
 
-## Table of Contents
-- [Features](#features)
-- [How It Works](#how-it-works)
-  - [Main Application: `src/z3950_search_for_marc/app.py`](#main-application-srcz3950_search_for_marcapppy)
-    - [Running a Search](#running-a-search)
-    - [Handling Results and Navigation](#handling-results-and-navigation)
-    - [Dynamic Record Fetching](#dynamic-record-fetching)
-    - [Error Handling and Logs](#error-handling-and-logs)
-    - [Location Filtering](#location-filtering)
-    - [Application Settings](#application-settings)
-- [Configuration: `servers.json`](#configuration-serversjson)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Development](#development)
-- [Packaging](#packaging)
-- [Contributing](#contributing)
+The application supports ISBN and title/author searches, incremental results, USA and worldwide
+server filters, on-demand record navigation, cancelable concurrent queries, persistent settings,
+custom server catalogs, and optional MARC field trimming.
 
-## Features
+## Requirements
 
-- **Search Functionality**:
-  - Search by **ISBN**.
-  - Search by a combination of **Title** and **Author**.
+- Windows 10 or later for the packaged application
+- Python 3.12 or later when running from source
+- [Index Data YAZ](https://www.indexdata.com/resources/software/yaz/) with `yaz-client`
 
-- **Location-Based Server Filtering**:
-  - **USA**: Includes servers based in the United States.
-  - **Worldwide**: Includes servers from around the globe.
-  - Users can select one or both locations to filter the servers used in the search.
+YAZ is an external prerequisite. It is not embedded in the application executable. After
+installing YAZ, either add its `bin` directory to `PATH` or select `yaz-client.exe` in the
+application's Settings dialog.
 
-- **Concurrent Server Queries**:
-  - Communicates with multiple **Z39.50 servers** concurrently.
-  - Prioritizes the **Library of Congress (LOC)** in the search sequence.
-  - Uses a configurable concurrency limit instead of a hardcoded thread count.
+## Install and run from source
 
-- **MARC Record Management**:
-  - Displays retrieved **MARC** records in a formatted view.
-  - Provides navigation between records with **Next** and **Previous** buttons.
-  - **Download MARC records** to a file in `.mrc` format.
-  - Supports configurable record trimming for tags `000-009` and `900+`.
+```powershell
+git clone https://github.com/jspann21/z3950_search_for_marc.git
+cd z3950_search_for_marc
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+python main.py
+```
 
-- **User Experience Enhancements**:
-  - **Progress Bar**: Shows the progress of ongoing search operations.
-  - **Logging**: Comprehensive logs within the application for monitoring operations and debugging.
-  - **Cancel Mechanism**: Allows users to stop long-running searches gracefully.
-  - **Dynamic Record Fetching**: Fetches additional records on-demand to reduce memory usage.
-  - **Persistent Settings**: Saves YAZ path, server catalog path, timeout, concurrency, default save location, and trimming behavior.
+The following entry points are equivalent:
 
-- **Project Modernization**:
-  - Packaged as a modern `src/`-layout Python project with `pyproject.toml`.
-  - Includes automated tests, linting, typing, and GitHub Actions CI.
-  - Includes a PyInstaller build spec for Windows desktop packaging.
+```powershell
+python main.py
+python -m z3950_search_for_marc
+z3950-search
+```
 
-## How It Works
+## Searching
 
-### Main Application: `src/z3950_search_for_marc/app.py`
+1. Choose **ISBN** or **Title + author** in the left panel.
+2. Enter a valid ISBN-10/ISBN-13, or both a title and an author.
+3. Select the United States, Worldwide, or both location filters.
+4. Select **Search servers**.
+5. Choose a successful server in the results table to inspect its first MARC record.
+6. Use **Previous** and **Next** to fetch and navigate that server's result set.
+7. Select **Export .mrc…** to save the displayed record.
 
-The **Z39.50 MARC Record Search** application is the main graphical interface for users to search and retrieve **MARC records** from configured Z39.50 servers. The repository also includes a root-level `main.py` compatibility launcher so the application can still be started with `python main.py`.
+Results appear as servers finish; one unavailable server does not interrupt the rest of the
+search. The progress summary distinguishes successful, empty, failed, timed-out, and canceled
+queries. The Activity panel contains timestamped diagnostic details.
 
-#### Running a Search
+Live Z39.50 endpoints are maintained by other organizations. A timeout or connection failure
+usually indicates that a particular target is unavailable or has changed, not that the desktop
+application failed.
 
-1. **Entering a Search Query**:
-   - You can search by entering an **ISBN** or a **Title** and **Author**.
-   - After entering the desired search terms, click the corresponding search button to initiate the search.
+## Settings
 
-      ![image](https://github.com/user-attachments/assets/6c4c0307-8a7f-45d4-9c5a-5f7a4399d208)
+Settings persist under the existing `z3950_search_for_marc` organization and application keys,
+so preferences from version 0.2 are reused automatically.
 
-2. **Running the Search**:
-   - The application constructs a query command using the **YAZ client** to communicate with Z39.50 servers.
-   - The search query is formatted based on the search type (ISBN or Title/Author) and sent to the servers configured in the server catalog. The bundled catalog is `src/z3950_search_for_marc/resources/servers.json`, and a custom catalog can be selected in Settings.
-   - **LOC** entries are prioritized in the query order.
-   - A **progress bar** shows the progress of the search.
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| YAZ executable | `yaz-client` | Command name or full path to `yaz-client.exe` |
+| Server catalog | Bundled catalog | Optional custom JSON server list |
+| Concurrent queries | 12 | Maximum active server processes, bounded from 1 to 32 |
+| Server timeout | 5 seconds | Per-server and per-record request timeout |
+| Save directory | Downloads | Initial directory for `.mrc` exports |
+| Record trimming | Enabled | Removes tags `000–009` and `900+` from displayed/exported records |
 
-3. **Displaying Search Results**:
-   - If the server returns a valid response, the application processes the returned data.
-   - **Number of Hits**: Displays the number of records matching the query from each server.
-   - The search results window shows summaries of each server response, including the **number of hits** returned by each server.
+Settings validates the YAZ executable, catalog, and export directory before saving. Invalid
+changes remain in the dialog for correction and do not replace the current working settings.
 
-     ![image](https://github.com/user-attachments/assets/2468adea-41a5-4d7a-ac2e-2ab2e26b8e25)
+## Server catalogs
 
-#### Handling Results and Navigation
-
-1. **Clicking on Search Results**:
-   - After a search completes, you can click on any result in the list to view more details about the records returned.
-   - Initially, only the first record is retrieved. The remaining records are fetched dynamically when requested.
-
-2. **Navigating Between Results**:
-   - You can use the **Next Record** and **Previous Record** buttons to navigate through records.
-   - As you navigate, the application dynamically fetches additional records from the server, improving performance by fetching only what’s needed.
-   - For each record, the MARC fields are parsed and displayed in a human-readable format in the details window.
-   - By default, MARC record fields `000-009` and `900+` are excluded because they often contain metadata or control information that is not useful for this application’s purposes. This behavior can now be changed in Settings.
-
-     ![image](https://github.com/user-attachments/assets/0405cb9e-093c-4196-959b-da49c6a7f6f8)
-
-3. **Downloading Records**:
-   - After viewing a record, you can **download the MARC record** by clicking the **Download Record** button.
-   - The record will be saved in `.mrc` format, which is compatible with many MARC record processing systems.
-   - The default save location is configurable and falls back to the user’s home or Downloads directory when needed.
-
-   **Recreating MARC Records with `pymarc`**:
-   - The application uses the **`pymarc`** library to parse, process, and display MARC records.
-   - After retrieving the raw data from the Z39.50 server, the application reconstructs a `pymarc.Record` object from the returned data.
-   - The resulting MARC record can then be saved to a file in `.mrc` format, allowing the user to easily share or archive the record.
-
-#### Dynamic Record Fetching
-
-The application fetches records on-demand:
-- When you request the next record, the application queries the server dynamically rather than fetching all records at once.
-- This feature improves memory usage and performance, especially with large result sets.
-- The fetch flow now includes stricter state handling so duplicate fetches are avoided while a request is already in progress.
-
-#### Error Handling and Logs
-
-- Errors like missing server keys, invalid MARC data, character-decoding issues, or connection problems are logged in the application's **log window**.
-- The application validates the configured YAZ executable and warns if it cannot be found.
-- You can track **search progress** and see details about the queries being run against Z39.50 servers.
-
-#### Location Filtering
-
-The **Location Filtering** feature allows users to filter the Z39.50 servers based on their geographic location, enhancing search relevance and performance.
-
-1. **Location Selection**:
-   - **USA**: Includes servers based in the United States.
-   - **Worldwide**: Includes servers from around the globe.
-   - Users can select one or both options to include the desired set of servers in their search.
-
-2. **Impact on Server Selection**:
-   - When a search is initiated, the application filters the configured Z39.50 servers based on the selected locations.
-   - Only servers that match the selected locations are queried, reducing unnecessary network requests and focusing the search on relevant servers.
-
-3. **Default Settings**:
-   - Both **USA** and **Worldwide** filters are checked by default, allowing searches across all available servers.
-   - Users can uncheck either option to limit the search scope as needed.
-
-4. **Configuration Dependence**:
-   - Each server entry in the server catalog must include a `"location"` field specifying its geographic category (`"USA"` or `"Worldwide"`).
-   - Proper configuration ensures that the filtering works correctly during searches.
-
-#### Application Settings
-
-The **Settings** dialog stores and restores the following values between runs:
-
-- **YAZ executable path**: Defaults to `yaz-client`, but can point to a custom install location.
-- **Server catalog path**: Optional override for the bundled `servers.json`.
-- **Max concurrent queries**: Configurable range for parallel server lookups.
-- **Server timeout**: Timeout in seconds for each YAZ request.
-- **Default save directory**: Preferred folder for saved `.mrc` files.
-- **Trim records**: Controls whether tags `000-009` and `900+` are removed when displaying and saving records.
-
-### Configuration: `servers.json`
-
-The application includes a bundled **`servers.json`** file in `src/z3950_search_for_marc/resources/servers.json` containing a list of Z39.50 servers used for querying MARC records. If you want to maintain an alternative server list, you can point the application to a different JSON file through the Settings dialog.
-
-Example `servers.json` structure:
+The packaged application contains a catalog of 372 servers. A custom catalog uses the same JSON
+array format as earlier releases:
 
 ```json
 [
@@ -165,132 +86,79 @@ Example `servers.json` structure:
     "location": "USA"
   },
   {
-    "name": "British Library",
-    "host": "z3950.bl.uk",
-    "port": 210,
-    "database": "UKPD",
+    "name": "Example Library",
+    "host": "catalog.example.org",
+    "port": "210",
+    "database": "books",
     "location": "Worldwide"
   }
 ]
 ```
 
-### Fields Explained:
+`port` may be a JSON number or numeric string. `location` must be `USA` or `Worldwide`.
+Library of Congress entries are queried first.
 
-- **name**: The name of the Z39.50 server.
-- **host**: The hostname or IP address of the server.
-- **port**: The port number on which the server listens for Z39.50 requests.
-- **database**: The specific database to query on the server.
-- **location**: The geographic category of the server (`"USA"` or `"Worldwide"`).
+## Troubleshooting
 
-## Installation
+### YAZ client required
 
-1. Clone the repository from GitHub:
+Open Settings and select the complete path to `yaz-client.exe`. The application checks the saved
+path, `PATH`, and common Windows YAZ installation locations.
 
-    ```bash
-    git clone https://github.com/jspann21/z3950_search_for_marc.git
-    cd z3950_search_for_marc
-    ```
+### Most servers time out
 
-2. Create and activate a virtual environment:
+Try one location group, reduce concurrent queries on a constrained connection, or increase the
+server timeout. Individual public catalogs frequently go offline or change their connection
+details.
 
-    ```bash
-    python -m venv .venv
-    . .venv/Scripts/activate
-    ```
+### International text looks incorrect
 
-    On PowerShell, use:
+The application recognizes UTF-8 and common legacy YAZ console encodings including CP850 and
+CP1252. Include the original Activity output and server endpoint when reporting a remaining
+encoding problem.
 
-    ```powershell
-    .\.venv\Scripts\Activate.ps1
-    ```
+### A custom catalog will not load
 
-3. Install the application:
-
-    ```bash
-    pip install -e .
-    ```
-
-    For development, install the optional tooling as well:
-
-    ```bash
-    pip install -e .[dev]
-    ```
-
-4. Ensure the **YAZ client** is installed and available in your system's PATH, or configure its full path in the application Settings dialog. You can find instructions and download links here: [YAZ Client by IndexData](https://www.indexdata.com/resources/software/yaz/).
-
-5. If you want to use a custom server catalog, prepare a JSON file matching the expected structure and set its path in Settings. Otherwise, the bundled catalog is used automatically.
-
-## Usage
-
-To run the application from the repository:
-
-```bash
-python main.py
-```
-
-You can also launch the installed package directly:
-
-```bash
-python -m z3950_search_for_marc
-```
-
-The graphical user interface will open, allowing you to:
-
-1. **Search by ISBN** or **Title/Author**:
-   - Enter the ISBN in the ISBN search box or enter the Title and Author in the respective fields.
-   - Select the desired locations (**USA**, **Worldwide**, or both) to filter the servers used in the search.
-   - Click the corresponding search button to initiate the search.
-
-2. **View Results** and **Navigate** through records:
-   - Search results will display summaries of each server's response.
-   - Click on a result to view detailed MARC record information.
-   - Use the **Next** and **Previous** buttons to navigate through records.
-
-3. **Download MARC Records**:
-   - After viewing a record, click the **Download Record** button to save the MARC record in `.mrc` format.
-
-4. **Monitor Progress and Logs**:
-   - The **progress bar** shows the search progress.
-   - The **log window** displays detailed logs for operations and debugging.
-
-5. **Cancel Searches**:
-   - Click the **Cancel** button to stop ongoing searches gracefully.
-
-6. **Manage Settings**:
-   - Click **Settings** to configure the YAZ executable path, server catalog, timeout, concurrency, save directory, and record trimming behavior.
+Confirm that the file contains a JSON array and every entry has non-empty `name`, `host`,
+`database`, `port`, and `location` values. The Settings dialog reports the first invalid entry.
 
 ## Development
 
-The project now uses a modern Python package layout rooted in `src/` and includes automated checks for code quality and behavior.
+Install the editable package and quality tools:
 
-Run the standard checks with:
-
-```bash
+```powershell
+python -m pip install -e ".[dev]"
+python -m ruff format --check .
 python -m ruff check .
 python -m mypy src tests
 python -m pytest
 ```
 
-Test coverage currently focuses on:
+The offline test suite uses controlled backends and subprocesses; it does not require YAZ or
+internet access. It covers query construction, catalog and settings compatibility, MARC parsing
+and decoding, subprocess timeout/cancellation, bounded search orchestration, stale-session
+isolation, complete Qt search/navigation/export workflows, and application startup.
 
-- Server catalog validation
-- MARC parsing and filename sanitization
-- Safer YAZ query construction
-- Character-decoding behavior for YAZ output
-- Settings persistence and basic PyQt window behavior
+The main layers are:
 
-GitHub Actions CI runs these checks on Windows, Linux, and macOS, and also performs a Windows PyInstaller smoke build.
+- `models.py`: domain types, settings, sessions, results, and record cache state
+- `backend.py`: `SearchBackend`, executable discovery, and cancellable YAZ processes
+- `search.py`: bounded Qt task orchestration and stale-session isolation
+- `widgets.py` and `dialogs.py`: focused UI components
+- `app.py`: application composition and user workflow coordination
 
-## Packaging
+## Build the Windows executable
 
-To build a Windows executable with PyInstaller:
-
-```bash
-python -m PyInstaller main.spec
+```powershell
+python -m pip install -e ".[dev,package]"
+python -m PyInstaller --clean --noconfirm main.spec
+& .\dist\z3950_search_for_marc-1.0.0.exe --smoke-test
 ```
 
-The generated executable is written to `dist/`.
+The executable includes the application icon and bundled server catalog. GitHub Actions runs the
+quality suite across supported Python versions and desktop operating systems, then builds,
+smoke-tests, and uploads the versioned Windows artifact.
 
-## Contributing
+## License
 
-If you find any issues or have suggestions for improvement, feel free to open a pull request or file an issue on GitHub. Contributions are welcome!
+GNU General Public License v3.0. See [LICENSE](LICENSE).

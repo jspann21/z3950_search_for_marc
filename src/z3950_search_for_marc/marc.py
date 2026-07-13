@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 from collections.abc import Callable
 
 from pymarc import Field, Record, Subfield
@@ -33,6 +34,11 @@ def is_yaz_client_installed(executable: str) -> bool:
 
 def decode_yaz_output(raw_output: bytes) -> str:
     """Decode yaz-client output, preferring decodings with fewer replacement artifacts."""
+    try:
+        return raw_output.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+
     best_text = raw_output.decode("utf-8", errors="replace")
     best_score = _score_decoded_text(best_text)
     for encoding in _ENCODINGS_TO_TRY:
@@ -46,8 +52,23 @@ def decode_yaz_output(raw_output: bytes) -> str:
 
 def _score_decoded_text(text: str) -> int:
     printable = sum(char.isprintable() or char in "\r\n\t" for char in text)
-    penalty = text.count("\ufffd") * 10 + text.count("÷") * 2 + text.count("Σ") * 2
-    return printable - penalty
+    control_characters = sum(
+        unicodedata.category(char) == "Cc" and char not in "\r\n\t" for char in text
+    )
+    mojibake_ranges = sum(
+        "\u0370" <= char <= "\u03ff" or "\u2500" <= char <= "\u259f" for char in text
+    )
+    suspicious_capitals = len(re.findall(r"[a-z][À-ÖØ-Þ]", text))
+    common_accented_letters = len(re.findall(r"[à-öø-ÿ]", text))
+    penalty = (
+        text.count("\ufffd") * 10
+        + control_characters * 6
+        + mojibake_ranges * 3
+        + suspicious_capitals * 3
+        + text.count("÷") * 2
+        + text.count("Σ") * 2
+    )
+    return printable + common_accented_letters - penalty
 
 
 def clean_yaz_output(raw_data: str) -> str:
@@ -100,7 +121,7 @@ def format_record_for_display(record: Record) -> str:
             formatted_record.append(f"{field.tag}    {field.data}")
             continue
 
-        indicators = "".join(field.indicators)
+        indicators = "".join(field.indicators or (" ", " "))
         subfields = " ".join(f"${subfield.code} {subfield.value}" for subfield in field.subfields)
         formatted_record.append(f"{field.tag} {indicators} {subfields}".rstrip())
     return "\n".join(formatted_record)
@@ -197,14 +218,16 @@ def _process_line(
     line_content = line[7:].strip()
 
     if tag_int < 10:
-        record.add_field(Field(tag=tag, data=line_content))
+        record.add_field(Field(tag=tag, data=line_content))  # type: ignore[no-untyped-call]
         return
 
     indicators = Indicators(*_parse_indicators(line[4:6]))
     sanitized_line = _remove_malformed_dollars(line_content, log_callback)
     subfields = _parse_subfields(sanitized_line, line, log_callback)
     if subfields:
-        record.add_field(Field(tag=tag, indicators=indicators, subfields=subfields))
+        record.add_field(  # type: ignore[no-untyped-call]
+            Field(tag=tag, indicators=indicators, subfields=subfields)
+        )
     else:
         log(log_callback, f"No valid subfields found for tag {tag}. Field not added.")
 

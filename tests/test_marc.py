@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from z3950_search_for_marc.marc import decode_yaz_output, extract_marc_record, sanitize_filename
 
 
@@ -15,6 +17,15 @@ def test_decode_yaz_output_prefers_legacy_console_decoding() -> None:
 
     assert "Ändra" in decoded
     assert "fullständighetsnivå" in decoded
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "cp850", "cp1252"])
+def test_decode_yaz_output_handles_common_encodings(encoding: str) -> None:
+    text = "245 10 $a Café résumé, édition"
+
+    decoded = decode_yaz_output(text.encode(encoding))
+
+    assert "Café résumé" in decoded
 
 
 def test_extract_marc_record_respects_trim_toggle() -> None:

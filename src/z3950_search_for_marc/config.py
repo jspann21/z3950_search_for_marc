@@ -55,11 +55,24 @@ def normalize_server(entry: Any, index: int) -> ServerConfig:
     if port < 1 or port > 65535:
         raise ValueError(f"Server entry {index} port {port} is out of range.")
 
-    location = str(entry["location"]).strip() or "Worldwide"
+    name = str(entry["name"]).strip()
+    host = str(entry["host"]).strip()
+    database = str(entry["database"]).strip()
+    if not name or not host or not database:
+        raise ValueError(f"Server entry {index} has an empty name, host, or database.")
+
+    raw_location = str(entry["location"]).strip() or "Worldwide"
+    location_lookup = {"usa": "USA", "worldwide": "Worldwide"}
+    location = location_lookup.get(raw_location.casefold())
+    if location is None:
+        raise ValueError(
+            f"Server entry {index} has an invalid location: {raw_location!r}. "
+            "Expected 'USA' or 'Worldwide'."
+        )
     return ServerConfig(
-        name=str(entry["name"]).strip(),
-        host=str(entry["host"]).strip(),
+        name=name,
+        host=host,
         port=port,
-        database=str(entry["database"]).strip(),
+        database=database,
         location=location,
     )

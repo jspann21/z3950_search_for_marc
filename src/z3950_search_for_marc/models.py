@@ -1,19 +1,42 @@
-"""Typed models used throughout the application."""
+"""Typed domain models shared by the application layers."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
+from uuid import UUID, uuid4
 
 from pymarc import Record
 
 
 class QueryType(StrEnum):
-    """Supported Z39.50 query types."""
+    """Supported Z39.50 query forms."""
 
     ISBN = "isbn"
     TITLE_AUTHOR = "title_author"
+
+
+class ServerStatus(StrEnum):
+    """Lifecycle state of one server in a search session."""
+
+    PENDING = "Pending"
+    SEARCHING = "Searching"
+    SUCCESS = "Available"
+    EMPTY = "No results"
+    FAILED = "Failed"
+    TIMED_OUT = "Timed out"
+    CANCELED = "Canceled"
+
+
+class FailureKind(StrEnum):
+    """Stable categories for backend failures."""
+
+    MISSING_EXECUTABLE = "missing_executable"
+    TIMEOUT = "timeout"
+    CANCELED = "canceled"
+    PROCESS = "process"
+    MALFORMED_RESPONSE = "malformed_response"
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,27 +51,99 @@ class ServerConfig:
 
     @property
     def endpoint(self) -> str:
-        """Return the yaz-client endpoint string."""
         return f"{self.host}:{self.port}/{self.database}"
 
     @property
+    def key(self) -> str:
+        return self.endpoint.casefold()
+
+    @property
     def summary(self) -> str:
-        """Return the human-readable search result summary."""
         return f"{self.name} ({self.endpoint})"
 
 
 @dataclass(frozen=True, slots=True)
-class SearchResult:
-    """A result row representing one responding server."""
+class SearchRequest:
+    """Validated inputs for a search."""
 
-    server: ServerConfig
+    query_type: QueryType
+    query: str | tuple[str, str]
+    locations: frozenset[str]
+    timeout_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
+class SearchSession:
+    """Identity and request data for one search run."""
+
+    request: SearchRequest
+    id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True, slots=True)
+class SearchProgress:
+    """Completion state for a multi-server search."""
+
+    session_id: UUID
+    completed: int
+    total: int
+
+    @property
+    def percentage(self) -> int:
+        return int((self.completed / self.total) * 100) if self.total else 100
+
+
+@dataclass(frozen=True, slots=True)
+class BackendResponse:
+    """Successful response from a search backend."""
+
+    stdout_text: str
+    cleaned_data: str
     number_of_hits: int
-    raw_data: str
+
+
+@dataclass(frozen=True, slots=True)
+class BackendFailure:
+    """Typed backend failure suitable for UI presentation."""
+
+    kind: FailureKind
+    message: str
+
+
+BackendResult = BackendResponse | BackendFailure
+
+
+@dataclass(frozen=True, slots=True)
+class ServerSearchResult:
+    """Current state of one server in a search session."""
+
+    session_id: UUID
+    server: ServerConfig
+    status: ServerStatus
+    number_of_hits: int = 0
+    raw_data: str = ""
+    message: str = ""
 
     @property
     def summary(self) -> str:
-        """Return the list item text prefix."""
         return self.server.summary
+
+
+# Backward-compatible name used by older integrations and tests.
+SearchResult = ServerSearchResult
+
+
+@dataclass(frozen=True, slots=True)
+class RecordReference:
+    """Address of a record in a server result set."""
+
+    session_id: UUID
+    server: ServerConfig
+    position: int
+
+    @property
+    def cache_key(self) -> tuple[str, int]:
+        return self.server.key, self.position
 
 
 def _default_save_directory() -> str:
@@ -68,7 +163,6 @@ class AppSettings:
     trim_records: bool = True
 
     def normalized(self) -> AppSettings:
-        """Return a validated copy with bounded values."""
         return AppSettings(
             yaz_executable=self.yaz_executable.strip() or "yaz-client",
             server_catalog_path=self.server_catalog_path.strip(),
@@ -81,18 +175,37 @@ class AppSettings:
 
 @dataclass(slots=True)
 class SearchState:
-    """Mutable state for the active search session."""
+    """UI-facing state and record cache for the active session."""
 
-    current_marc_records: list[Record] = field(default_factory=list)
-    current_record_index: int = 0
-    total_records: int = 0
-    current_server_info: ServerConfig | None = None
-    current_query_type: QueryType | None = None
-    current_query: str | tuple[str, str] | None = None
+    session: SearchSession | None = None
+    selected_result: ServerSearchResult | None = None
+    current_position: int = 0
+    records: dict[tuple[str, int], Record] = field(default_factory=dict)
+    fetch_in_progress: bool = False
 
+    @property
+    def total_records(self) -> int:
+        return self.selected_result.number_of_hits if self.selected_result else 0
+
+    @property
+    def current_record(self) -> Record | None:
+        if not self.selected_result or self.current_position < 1:
+            return None
+        return self.records.get((self.selected_result.server.key, self.current_position))
+
+    def reset(self, session: SearchSession | None = None) -> None:
+        self.session = session
+        self.selected_result = None
+        self.current_position = 0
+        self.records.clear()
+        self.fetch_in_progress = False
+
+    def select(self, result: ServerSearchResult, record: Record | None) -> None:
+        self.selected_result = result
+        self.current_position = 1
+        if record is not None:
+            self.records[(result.server.key, 1)] = record
+
+    # Compatibility for the previous application state API.
     def reset_results(self) -> None:
-        """Clear the current result state."""
-        self.current_marc_records.clear()
-        self.current_record_index = 0
-        self.total_records = 0
-        self.current_server_info = None
+        self.reset(self.session)

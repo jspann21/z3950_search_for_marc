@@ -4,24 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "z3950-search-for-marc"
-version = "0.2.0"
+version = "1.0.0"
 description = "Desktop GUI for searching Z39.50 servers and exporting MARC records."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "GPL-3.0-only" }
 authors = [{ name = "Jeremy Spann" }]
 dependencies = [
-  "PyQt6~=6.11",
-  "pymarc~=5.3",
+  "PyQt6>=6.11,<7",
+  "pymarc>=5.4,<6",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "mypy~=1.18",
-  "pyinstaller~=6.19",
-  "pytest~=8.4",
-  "pytest-qt~=4.5",
-  "ruff~=0.13",
+  "mypy>=1.18,<2",
+  "pytest>=8.4,<9",
+  "pytest-qt>=4.5,<5",
+  "ruff>=0.13,<1",
+]
+package = [
+  "pyinstaller>=6.21,<7",
 ]
 
 [project.scripts]
@@ -43,7 +45,7 @@ qt_api = "pyqt6"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -61,12 +63,24 @@ select = [
 "tests/*.py" = ["N802", "N803", "N806"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 files = ["src", "tests"]
+strict = true
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 strict_optional = true
-check_untyped_defs = true
-disallow_any_generics = false
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+  "conftest",
+  "test_app",
+  "test_backend",
+  "test_config",
+  "test_marc",
+  "test_search",
+  "test_yaz",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
