@@ -1,0 +1,2 @@
+# Signed catalog bytes must be identical on every checkout, especially on Windows.
+site/catalog/v2/*.json text eol=lf

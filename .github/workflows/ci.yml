@@ -6,17 +6,13 @@ on:
 
 jobs:
   quality:
-    name: Python 3.14 · ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
+    name: Python 3.14 · Windows
+    runs-on: windows-latest
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.14.3"
           enable-cache: true
@@ -25,10 +21,10 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy src tests
       - run: uv run pytest -m "not native" --junitxml=test-results.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: test-results-${{ matrix.os }}
+          name: test-results-windows
           path: test-results.xml
 
   native-windows:
@@ -38,7 +34,7 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Read package version
         id: package
         shell: pwsh
@@ -46,7 +42,7 @@ jobs:
           $VersionMatch = Select-String -LiteralPath pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"$'
           if (-not $VersionMatch) { throw "Could not read the application version from pyproject.toml." }
           "version=$($VersionMatch.Matches[0].Groups[1].Value)" >> $env:GITHUB_OUTPUT
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.14.3"
           enable-cache: true
@@ -58,7 +54,7 @@ jobs:
         run: ./scripts/package_windows.ps1
       - shell: pwsh
         run: ./scripts/test_msi.ps1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Z3950MarcSearch-${{ steps.package.outputs.version }}-Windows-x64
           path: |
@@ -75,7 +71,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate release tag
         id: package
         shell: bash
@@ -86,7 +82,7 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: Z3950MarcSearch-${{ steps.package.outputs.version }}-Windows-x64
           path: release

@@ -23,8 +23,8 @@ jobs:
           - os: ubuntu-latest
             runner: ubuntu
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.14.3"
       - run: uv sync --locked --extra dev
@@ -48,7 +48,7 @@ jobs:
           --schema catalog/servers.v2.schema.json
           --runner ${{ matrix.runner }}
           --output probe-${{ matrix.runner }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: probe-${{ matrix.runner }}
           path: probe-${{ matrix.runner }}.json
@@ -57,12 +57,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: probe
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.14.3"
       - run: uv sync --locked --extra dev
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: probe-*
           merge-multiple: true
@@ -76,7 +76,7 @@ jobs:
           --output-state catalog/health-state.json
           --transition-report catalog/transitions.json
       - name: Create status-transition pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: automation/catalog-health
           delete-branch: true
