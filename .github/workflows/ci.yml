@@ -12,7 +12,7 @@ jobs:
       QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14.3"
           enable-cache: true
@@ -42,7 +42,7 @@ jobs:
           $VersionMatch = Select-String -LiteralPath pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"$'
           if (-not $VersionMatch) { throw "Could not read the application version from pyproject.toml." }
           "version=$($VersionMatch.Matches[0].Groups[1].Value)" >> $env:GITHUB_OUTPUT
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14.3"
           enable-cache: true
