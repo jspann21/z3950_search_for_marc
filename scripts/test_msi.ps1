@@ -1,13 +1,22 @@
 param(
-    [string]$MsiPath = "dist\Z3950MarcSearch-2.0.0-x64.msi"
+    [string]$MsiPath = ""
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
+if (-not $MsiPath) {
+    $VersionMatch = Select-String `
+        -LiteralPath (Join-Path $ProjectRoot "pyproject.toml") `
+        -Pattern '^version\s*=\s*"([^"]+)"$'
+    if (-not $VersionMatch) { throw "Could not read the application version from pyproject.toml." }
+    $AppVersion = $VersionMatch.Matches[0].Groups[1].Value
+    $MsiPath = "dist\Z3950MarcSearch-$AppVersion-x64.msi"
+}
 $Msi = [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot $MsiPath))
 $InstallDirectory = Join-Path $env:LOCALAPPDATA "Programs\Z39.50 MARC Search"
 $Executable = Join-Path $InstallDirectory "Z3950MarcSearch.exe"
 $UserData = Join-Path $env:LOCALAPPDATA "Z3950MarcSearch"
+$DesktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "Z39.50 MARC Search.lnk"
 $LogDirectory = Join-Path $ProjectRoot "build\msi-test"
 New-Item -ItemType Directory -Force $LogDirectory | Out-Null
 
@@ -17,6 +26,9 @@ try {
         -WindowStyle Hidden -Wait -PassThru
     if ($Install.ExitCode -ne 0) { throw "MSI installation failed with $($Install.ExitCode)." }
     if (-not (Test-Path -LiteralPath $Executable)) { throw "Installed executable is missing." }
+    if (-not (Test-Path -LiteralPath $DesktopShortcut)) {
+        throw "The default desktop shortcut is missing."
+    }
 
     $OriginalPath = $env:PATH
     $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
@@ -40,4 +52,5 @@ finally {
 
 if (Test-Path -LiteralPath $InstallDirectory) { throw "Install directory remained after uninstall." }
 if (Test-Path -LiteralPath $UserData) { throw "User data remained after default uninstall." }
-Write-Host "MSI clean-install, self-test, and uninstall acceptance passed."
+if (Test-Path -LiteralPath $DesktopShortcut) { throw "Desktop shortcut remained after uninstall." }
+Write-Host "MSI wizard defaults, clean install, self-test, and uninstall acceptance passed."

@@ -49,6 +49,13 @@ class FailureKind(StrEnum):
     INTERNAL = "internal"
 
 
+class Theme(StrEnum):
+    """The supported application appearance modes."""
+
+    LIGHT = "light"
+    DARK = "dark"
+
+
 @dataclass(frozen=True, slots=True)
 class ServerDefinition:
     id: str
@@ -165,6 +172,7 @@ class AppSettings:
     server_timeout_seconds: int = 5
     default_save_directory: str = field(default_factory=_downloads_directory)
     trim_records: bool = True
+    theme: Theme = Theme.LIGHT
     automatic_catalog_updates: bool = True
     disabled_server_ids: tuple[str, ...] = ()
     last_catalog_check_at: datetime | None = None
@@ -175,6 +183,7 @@ class AppSettings:
             server_timeout_seconds=max(1, min(60, int(self.server_timeout_seconds))),
             default_save_directory=self.default_save_directory.strip() or _downloads_directory(),
             trim_records=bool(self.trim_records),
+            theme=Theme(self.theme),
             automatic_catalog_updates=bool(self.automatic_catalog_updates),
             disabled_server_ids=tuple(sorted(set(self.disabled_server_ids))),
             last_catalog_check_at=(

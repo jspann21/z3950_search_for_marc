@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QFileDialog,
     QFormLayout,
@@ -20,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .domain.models import AppSettings
+from .domain.models import AppSettings, Theme
 
 
 class SettingsDialog(QDialog):
@@ -44,7 +45,8 @@ class SettingsDialog(QDialog):
             self,
         )
         intro.setWordWrap(True)
-        intro.setStyleSheet("color: #526176;")
+        intro.setObjectName("secondaryText")
+        defaults = AppSettings()
         self.max_threads_input = QSpinBox(self)
         self.max_threads_input.setRange(1, 32)
         self.max_threads_input.setValue(settings.max_concurrent_queries)
@@ -57,6 +59,11 @@ class SettingsDialog(QDialog):
             "Hide and remove tags 000–009 and 900+ from exported records", self
         )
         self.trim_records_checkbox.setChecked(settings.trim_records)
+        self.theme_input = QComboBox(self)
+        self.theme_input.setAccessibleName("Theme")
+        self.theme_input.addItem("Light", Theme.LIGHT)
+        self.theme_input.addItem("Dark", Theme.DARK)
+        self.theme_input.setCurrentIndex(self.theme_input.findData(settings.theme))
         self.automatic_updates_checkbox = QCheckBox("Update the server catalog automatically", self)
         self.automatic_updates_checkbox.setChecked(settings.automatic_catalog_updates)
         self.import_catalog_input = QLineEdit(self)
@@ -64,8 +71,18 @@ class SettingsDialog(QDialog):
         self.import_catalog_input.setPlaceholderText("No legacy catalog selected")
 
         form = QFormLayout()
-        form.addRow("Concurrent targets", self.max_threads_input)
-        form.addRow("Server timeout", self.timeout_input)
+        form.addRow(
+            "Concurrent targets",
+            self._field_with_default(
+                self.max_threads_input, f"Default: {defaults.max_concurrent_queries}"
+            ),
+        )
+        form.addRow(
+            "Server timeout",
+            self._field_with_default(
+                self.timeout_input, f"Default: {defaults.server_timeout_seconds} seconds"
+            ),
+        )
         form.addRow(
             "Save directory",
             self._browse_row(self.default_save_directory_input, self._browse_save_directory),
@@ -76,6 +93,7 @@ class SettingsDialog(QDialog):
             "Import old JSON",
             self._browse_row(self.import_catalog_input, self._browse_legacy_catalog),
         )
+        form.addRow("Theme", self.theme_input)
 
         save_button = QPushButton("Save settings", self)
         save_button.setProperty("primary", True)
@@ -111,6 +129,17 @@ class SettingsDialog(QDialog):
         row.addWidget(button)
         return container
 
+    def _field_with_default(self, field: QWidget, text: str) -> QWidget:
+        container = QWidget(self)
+        row = QHBoxLayout(container)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(10)
+        row.addWidget(field, 1)
+        default_label = QLabel(text, container)
+        default_label.setObjectName("fieldHint")
+        row.addWidget(default_label)
+        return container
+
     def _browse_save_directory(self) -> None:
         directory = QFileDialog.getExistingDirectory(
             self,
@@ -141,6 +170,7 @@ class SettingsDialog(QDialog):
             server_timeout_seconds=self.timeout_input.value(),
             default_save_directory=str(directory),
             trim_records=self.trim_records_checkbox.isChecked(),
+            theme=Theme(self.theme_input.currentData()),
             automatic_catalog_updates=self.automatic_updates_checkbox.isChecked(),
         ).normalized()
         self.accept()

@@ -9,7 +9,7 @@ description = "Self-contained desktop client for searching Z39.50 targets and ex
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
 license = "GPL-3.0-only"
-authors = [{ name = "Jeremy Spann" }]
+authors = [{ name = "jspann" }]
 dependencies = [
   "cffi>=2.0,<3",
   "cryptography>=45,<47",
@@ -49,6 +49,7 @@ z3950_search_for_marc = [
   "resources/*.ico",
   "resources/*.json",
   "resources/*.pem",
+  "resources/*.svg",
   "resources/*.txt",
   "native/*.dll",
   "native/*.pyd",

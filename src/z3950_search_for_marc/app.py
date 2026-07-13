@@ -9,8 +9,18 @@ from pathlib import Path
 from typing import cast
 from uuid import UUID
 
-from PySide6.QtCore import QObject, QRunnable, QSettings, QThreadPool, QTimer, Signal, Slot
-from PySide6.QtGui import QAction, QCloseEvent, QIcon, QKeySequence
+from PySide6.QtCore import (
+    QObject,
+    QRunnable,
+    QSettings,
+    Qt,
+    QThreadPool,
+    QTimer,
+    QUrl,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -22,6 +32,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from . import __version__
 from .dialogs import SettingsDialog
 from .domain.models import (
     AppSettings,
@@ -52,6 +63,9 @@ from .theme import apply_theme
 from .widgets import ActivityPanel, RecordPanel, ResultsPanel, SearchPanel
 
 __all__ = ["SettingsDialog", "Z3950SearchApp", "build_application", "run"]
+
+PROJECT_REPOSITORY_URL = "https://github.com/jspann21/z3950_search_for_marc"
+APPLICATION_DISPLAY_NAME = f"Z39.50 MARC Search {__version__}"
 
 
 class _CatalogUpdateSignals(QObject):
@@ -91,6 +105,9 @@ class Z3950SearchApp(QMainWindow):
             self.qsettings, path=self.paths.settings
         )
         self.app_settings = self.settings_store.load()
+        application = cast(QApplication | None, QApplication.instance())
+        if application is not None:
+            apply_theme(application, self.app_settings.theme)
         self.catalog_repository = catalog_repository or CatalogRepository(self.paths)
         self._startup_warnings: list[str] = []
         if self.app_settings.disabled_server_ids and not self.paths.disabled_servers.exists():
@@ -115,7 +132,7 @@ class Z3950SearchApp(QMainWindow):
             QTimer.singleShot(1500, self._check_catalog_update)
 
     def _init_ui(self) -> None:
-        self.setWindowTitle("Z39.50 MARC Search 2.0")
+        self.setWindowTitle(APPLICATION_DISPLAY_NAME)
         self.setMinimumSize(1180, 700)
         self.resize(1520, 880)
         icon_path = resource_path("app_icon.ico")
@@ -153,22 +170,27 @@ class Z3950SearchApp(QMainWindow):
         self.record_panel.export_requested.connect(self._export_record)
 
         settings_action = QAction("Settings", self)
-        settings_action.setShortcut(QKeySequence.StandardKey.Preferences)
+        settings_action.setShortcut(QKeySequence("Ctrl+,"))
         settings_action.triggered.connect(self._open_settings_dialog)
         update_action = QAction("Check server catalog for updates", self)
         update_action.triggered.connect(self._check_catalog_update)
         exit_action = QAction("Exit", self)
-        exit_action.setShortcut(QKeySequence.StandardKey.Quit)
+        exit_action.setShortcut(QKeySequence("Ctrl+Q"))
         exit_action.triggered.connect(self.close)
+        github_action = QAction("View project on GitHub", self)
+        github_action.triggered.connect(self._open_project_repository)
         self.addAction(settings_action)
         self.addAction(update_action)
         self.addAction(exit_action)
+        self.addAction(github_action)
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(settings_action)
         file_menu.addSeparator()
         file_menu.addAction(exit_action)
         catalog_menu = self.menuBar().addMenu("Server Catalog")
         catalog_menu.addAction(update_action)
+        help_menu = self.menuBar().addMenu("Help")
+        help_menu.addAction(github_action)
 
         # Stable compatibility attributes for existing UI automation.
         self.isbn_input = self.search_panel.isbn_input
@@ -461,6 +483,9 @@ class Z3950SearchApp(QMainWindow):
     def _download_marc_record(self) -> None:
         self._export_record()
 
+    def _open_project_repository(self) -> None:
+        QDesktopServices.openUrl(QUrl(PROJECT_REPOSITORY_URL))
+
     def _open_settings_dialog(self) -> None:
         dialog = SettingsDialog(
             self.app_settings,
@@ -477,10 +502,15 @@ class Z3950SearchApp(QMainWindow):
             server_timeout_seconds=candidate.server_timeout_seconds,
             default_save_directory=candidate.default_save_directory,
             trim_records=candidate.trim_records,
+            theme=candidate.theme,
             automatic_catalog_updates=candidate.automatic_catalog_updates,
             disabled_server_ids=old.disabled_server_ids,
             last_catalog_check_at=old.last_catalog_check_at,
         ).normalized()
+        application = cast(QApplication | None, QApplication.instance())
+        if application is not None:
+            apply_theme(application, self.app_settings.theme)
+        self.results_panel.refresh_theme()
         if dialog.legacy_catalog_path:
             try:
                 imported = self.catalog_repository.import_legacy_file(dialog.legacy_catalog_path)
@@ -511,6 +541,7 @@ class Z3950SearchApp(QMainWindow):
             server_timeout_seconds=self.app_settings.server_timeout_seconds,
             default_save_directory=self.app_settings.default_save_directory,
             trim_records=self.app_settings.trim_records,
+            theme=self.app_settings.theme,
             automatic_catalog_updates=self.app_settings.automatic_catalog_updates,
             disabled_server_ids=self.app_settings.disabled_server_ids,
             last_catalog_check_at=datetime.now(UTC),
@@ -533,6 +564,7 @@ class Z3950SearchApp(QMainWindow):
             server_timeout_seconds=self.app_settings.server_timeout_seconds,
             default_save_directory=self.app_settings.default_save_directory,
             trim_records=self.app_settings.trim_records,
+            theme=self.app_settings.theme,
             automatic_catalog_updates=self.app_settings.automatic_catalog_updates,
             disabled_server_ids=self.app_settings.disabled_server_ids,
             last_catalog_check_at=datetime.now(UTC),
@@ -549,10 +581,11 @@ class Z3950SearchApp(QMainWindow):
 def build_application() -> QApplication:
     app = cast(QApplication | None, QApplication.instance())
     if app is None:
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs)
         app = QApplication(sys.argv)
     app.setOrganizationName("z3950_search_for_marc")
     app.setApplicationName("z3950_search_for_marc")
-    app.setApplicationDisplayName("Z39.50 MARC Search 2.0")
+    app.setApplicationDisplayName(APPLICATION_DISPLAY_NAME)
     apply_theme(app)
     return app
 

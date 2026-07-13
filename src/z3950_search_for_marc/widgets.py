@@ -148,6 +148,7 @@ class ResultsPanel(QWidget):
         self.proxy = QSortFilterProxyModel(self)
         self.proxy.setSourceModel(self.model)
         self.proxy.setSortCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.proxy.setSortRole(ResultsTableModel.SORT_ROLE)
         self.table = QTableView(self)
         self.table.setModel(self.proxy)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
@@ -155,15 +156,16 @@ class ResultsPanel(QWidget):
         self.table.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
         self.table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.table.setTextElideMode(Qt.TextElideMode.ElideRight)
         self.table.setSortingEnabled(True)
+        self.table.sortByColumn(3, Qt.SortOrder.AscendingOrder)
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(29)
         header = self.table.horizontalHeader()
-        header.setSortIndicatorShown(False)
-        header.sectionClicked.connect(lambda _section: header.setSortIndicatorShown(True))
+        header.setSortIndicatorShown(True)
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         for column in (2, 3):
@@ -211,6 +213,9 @@ class ResultsPanel(QWidget):
         else:
             text = "Search complete · no matching records found"
         self.summary_label.setText(text)
+
+    def refresh_theme(self) -> None:
+        self.model.refresh_theme()
 
     def _selection_changed(self) -> None:
         rows = self.table.selectionModel().selectedRows()

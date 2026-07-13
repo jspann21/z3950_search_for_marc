@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from queue import Empty, SimpleQueue
 from uuid import UUID
 
 from PySide6.QtCore import QMetaObject, QObject, Qt, QThread, Signal, Slot
@@ -28,6 +29,7 @@ class _EngineWorker(QObject):
         self.engine = engine
         self._cancellation = CancellationToken()
         self._active_session_id: UUID | None = None
+        self._fetch_queue: SimpleQueue[RecordReference] = SimpleQueue()
 
     @Slot(object, object, int)
     def search(
@@ -45,20 +47,33 @@ class _EngineWorker(QObject):
             self.server_changed.emit(result)
             completed += 1
             self.progress_changed.emit(SearchProgress(session.id, completed, len(servers)))
+            # Search owns the native handles for its whole run. Service navigation between
+            # completed targets so a 200-server search does not block Next/Previous for minutes.
+            self.drain_fetches()
         if self._active_session_id == session.id:
+            self.drain_fetches()
             self.search_finished.emit(session.id)
 
-    @Slot(object)
-    def fetch(self, reference: RecordReference) -> None:
-        if reference.session_id != self._active_session_id:
-            return
-        result = self.engine.fetch_record(
-            reference.session_id,
-            reference.server.id,
-            reference.position,
-            self._cancellation,
-        )
-        self.record_fetched.emit(reference, result)
+    def enqueue_fetch(self, reference: RecordReference) -> None:
+        """Accept a navigation request safely from the UI thread."""
+        self._fetch_queue.put(reference)
+
+    @Slot()
+    def drain_fetches(self) -> None:
+        while True:
+            try:
+                reference = self._fetch_queue.get_nowait()
+            except Empty:
+                return
+            if reference.session_id != self._active_session_id:
+                continue
+            result = self.engine.fetch_record(
+                reference.session_id,
+                reference.server.id,
+                reference.position,
+                self._cancellation,
+            )
+            self.record_fetched.emit(reference, result)
 
     def cancel_now(self) -> None:
         self._cancellation.cancel()
@@ -78,7 +93,7 @@ class SearchCoordinator(QObject):
     search_finished = Signal(object)
     record_fetched = Signal(object, object)
     _search_requested = Signal(object, object, int)
-    _fetch_requested = Signal(object)
+    _fetch_requested = Signal()
 
     def __init__(self, engine: SessionEngine | None = None, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -87,7 +102,7 @@ class SearchCoordinator(QObject):
         self.worker = _EngineWorker(self.engine)
         self.worker.moveToThread(self.worker_thread)
         self._search_requested.connect(self.worker.search)
-        self._fetch_requested.connect(self.worker.fetch)
+        self._fetch_requested.connect(self.worker.drain_fetches)
         self.worker.server_changed.connect(self.server_changed)
         self.worker.progress_changed.connect(self.progress_changed)
         self.worker.search_finished.connect(self.search_finished)
@@ -117,7 +132,8 @@ class SearchCoordinator(QObject):
 
     def fetch_record(self, reference: RecordReference) -> None:
         if reference.session_id == self._active_session_id:
-            self._fetch_requested.emit(reference)
+            self.worker.enqueue_fetch(reference)
+            self._fetch_requested.emit()
 
     def cancel(self) -> None:
         self.worker.cancel_now()

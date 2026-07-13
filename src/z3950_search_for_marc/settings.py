@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from .domain.models import AppSettings
+from .domain.models import AppSettings, Theme
 from .infrastructure.atomic import atomic_write_json
 from .infrastructure.paths import AppDataPaths
 
@@ -56,6 +56,7 @@ class SettingsStore:
                 "server_timeout_seconds": normalized.server_timeout_seconds,
                 "default_save_directory": normalized.default_save_directory,
                 "trim_records": normalized.trim_records,
+                "theme": normalized.theme.value,
                 "automatic_catalog_updates": normalized.automatic_catalog_updates,
                 "last_catalog_check_at": (
                     normalized.last_catalog_check_at.isoformat().replace("+00:00", "Z")
@@ -73,6 +74,7 @@ class SettingsStore:
             server_timeout_seconds=int(raw.get("server_timeout_seconds", 5)),
             default_save_directory=str(raw.get("default_save_directory", "")),
             trim_records=bool(raw.get("trim_records", True)),
+            theme=_parse_theme(raw.get("theme")),
             automatic_catalog_updates=bool(raw.get("automatic_catalog_updates", True)),
             disabled_server_ids=tuple(str(value) for value in raw.get("disabled_server_ids", [])),
             last_catalog_check_at=_parse_datetime(raw.get("last_catalog_check_at")),
@@ -86,3 +88,10 @@ class SettingsStore:
             default_save_directory=str(self._legacy.value("default_save_directory", "")),
             trim_records=bool(self._legacy.value("trim_records", True, type=bool)),
         ).normalized()
+
+
+def _parse_theme(value: Any) -> Theme:
+    try:
+        return Theme(str(value))
+    except ValueError:
+        return Theme.LIGHT

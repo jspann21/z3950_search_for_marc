@@ -43,15 +43,39 @@ try {
     }
     & (Join-Path $ToolDirectory "wix.exe") extension add --global WixToolset.Util.wixext/5.0.2
     if ($LASTEXITCODE -ne 0) { throw "WiX Utility extension installation failed." }
+
+    & (Join-Path $ToolDirectory "wix.exe") extension add --global WixToolset.UI.wixext/5.0.2
+    if ($LASTEXITCODE -ne 0) { throw "WiX UI extension installation failed." }
+
+    $VersionMatch = Select-String `
+        -LiteralPath (Join-Path $ProjectRoot "pyproject.toml") `
+        -Pattern '^version\s*=\s*"([^"]+)"$'
+    if (-not $VersionMatch) { throw "Could not read the application version from pyproject.toml." }
+    $AppVersion = $VersionMatch.Matches[0].Groups[1].Value
+
+    $InstallerBuildDirectory = Join-Path $ProjectRoot "build\installer"
+    New-Item -ItemType Directory -Force $InstallerBuildDirectory | Out-Null
+    $LicenseRtf = Join-Path $InstallerBuildDirectory "LICENSE.rtf"
+    $LicenseText = Get-Content -LiteralPath (Join-Path $ProjectRoot "LICENSE") -Raw
+    $EscapedLicense = $LicenseText.Replace('\', '\\').Replace('{', '\{').Replace('}', '\}')
+    $EscapedLicense = $EscapedLicense -replace "`r?`n", "\par`r`n"
+    $Rtf = "{\rtf1\ansi\deff0{\fonttbl{\f0 Segoe UI;}}\fs18 $EscapedLicense}"
+    Set-Content -LiteralPath $LicenseRtf -Value $Rtf -Encoding ascii
+
+    $MsiName = "Z3950MarcSearch-$AppVersion-x64.msi"
     & (Join-Path $ToolDirectory "wix.exe") build installer\Product.wxs `
         -arch x64 `
         -ext WixToolset.Util.wixext `
+        -ext WixToolset.UI.wixext `
+        -d "AppVersion=$AppVersion" `
+        -d "ApplicationIcon=$(Join-Path $ProjectRoot 'app_icon.ico')" `
+        -d "LicenseRtf=$LicenseRtf" `
         -d "PublishDir=$PublishDir" `
-        -o (Join-Path $Output "Z3950MarcSearch-2.0.0-x64.msi")
+        -o (Join-Path $Output $MsiName)
     if ($LASTEXITCODE -ne 0) { throw "MSI build failed." }
-    $Msi = Join-Path $Output "Z3950MarcSearch-2.0.0-x64.msi"
+    $Msi = Join-Path $Output $MsiName
     $Digest = (Get-FileHash $Msi -Algorithm SHA256).Hash.ToLowerInvariant()
-    "$Digest  Z3950MarcSearch-2.0.0-x64.msi" |
+    "$Digest  $MsiName" |
         Set-Content -LiteralPath (Join-Path $Output "SHA256SUMS.txt") -Encoding ascii
     Write-Host "MSI SHA-256: $Digest"
 }

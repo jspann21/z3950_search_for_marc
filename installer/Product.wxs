@@ -1,41 +1,69 @@
 <Wix
   xmlns="http://wixtoolset.org/schemas/v4/wxs"
+  xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
   xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <Package
     Name="Z39.50 MARC Search"
-    Version="2.0.0"
-    Manufacturer="Jeremy Spann"
-    ProductCode="40CB1B14-D106-47DE-BCBD-76B06781C15E"
+    Version="$(AppVersion)"
+    Manufacturer="jspann"
+    ProductCode="*"
     UpgradeCode="5C76EA3A-534B-47F1-8CB2-72E937DF4B8F"
     Scope="perUser">
     <SummaryInformation Description="Self-contained Z39.50 MARC desktop search client" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      Schedule="afterInstallInitialize"
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="UserProgramsFolder" Name="Programs">
-        <Directory Id="INSTALLFOLDER" Name="Z39.50 MARC Search" />
+        <Directory Id="APPLICATIONFOLDER" Name="Z39.50 MARC Search" />
       </Directory>
     </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
 
     <Property Id="USERDATADIR" Value="%LOCALAPPDATA%\Z3950MarcSearch" />
     <Property Id="PRESERVEUSERDATA" Value="0" Secure="yes" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Z39.50 MARC Search" />
+    <Property Id="WixShellExecTarget" Value="[#MainExecutableFile]" />
+    <Property Id="ARPPRODUCTICON" Value="ApplicationIcon" />
 
-    <Files Include="$(PublishDir)\**" Directory="INSTALLFOLDER">
-      <Exclude Files="$(PublishDir)\Z3950MarcSearch.exe" />
-    </Files>
-    <File Source="$(PublishDir)\Z3950MarcSearch.exe" Directory="INSTALLFOLDER">
+    <Icon Id="ApplicationIcon" SourceFile="$(ApplicationIcon)" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(LicenseRtf)" />
+
+    <Component Id="MainExecutable" Directory="APPLICATIONFOLDER" Guid="F13E7783-48A3-4F8C-82F4-5CB50A3540E9">
+      <File Id="MainExecutableFile" Source="$(PublishDir)\Z3950MarcSearch.exe" KeyPath="yes">
+        <Shortcut
+          Id="StartMenuShortcut"
+          Directory="ProgramMenuFolder"
+          Name="Z39.50 MARC Search"
+          Description="Search Z39.50 targets and export MARC records"
+          WorkingDirectory="APPLICATIONFOLDER" />
+      </File>
+    </Component>
+
+    <Component Id="DesktopShortcutComponent" Directory="APPLICATIONFOLDER" Guid="0369E680-E131-4AE2-90A7-52152B8D96DD">
       <Shortcut
-        Id="StartMenuShortcut"
-        Directory="ProgramMenuFolder"
+        Id="DesktopShortcut"
+        Directory="DesktopFolder"
         Name="Z39.50 MARC Search"
         Description="Search Z39.50 targets and export MARC records"
-        WorkingDirectory="INSTALLFOLDER" />
-    </File>
-
-    <Component Id="UserDataCleanup" Directory="INSTALLFOLDER" Guid="*">
+        Target="[#MainExecutableFile]"
+        WorkingDirectory="APPLICATIONFOLDER" />
       <RegistryValue
         Root="HKCU"
-        Key="Software\Jeremy Spann\Z3950MarcSearch"
+        Key="Software\jspann\Z3950MarcSearch"
+        Name="DesktopShortcut"
+        Type="integer"
+        Value="1"
+        KeyPath="yes" />
+    </Component>
+
+    <Component Id="UserDataCleanup" Directory="APPLICATIONFOLDER" Guid="CF359430-5E98-4EC0-A842-AC098EB5E77F">
+      <RegistryValue
+        Root="HKCU"
+        Key="Software\jspann\Z3950MarcSearch"
         Name="Installed"
         Type="integer"
         Value="1"
@@ -44,7 +72,94 @@
         Id="RemoveUserData"
         Property="USERDATADIR"
         On="uninstall"
-        Condition="PRESERVEUSERDATA &lt;&gt; 1" />
+        Condition="PRESERVEUSERDATA &lt;&gt; 1 AND NOT UPGRADINGPRODUCTCODE" />
     </Component>
+
+    <Feature
+      Id="MainApplication"
+      Title="Z39.50 MARC Search"
+      Description="The application and its required runtime files."
+      Level="1"
+      AllowAbsent="no"
+      AllowAdvertise="no"
+      Display="expand">
+      <Files Include="$(PublishDir)\**" Directory="APPLICATIONFOLDER">
+        <Exclude Files="$(PublishDir)\Z3950MarcSearch.exe" />
+      </Files>
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="UserDataCleanup" />
+      <Feature
+        Id="DesktopShortcutFeature"
+        Title="Desktop shortcut"
+        Description="Create a shortcut on your desktop."
+        Level="1"
+        AllowAdvertise="no">
+        <ComponentRef Id="DesktopShortcutComponent" />
+      </Feature>
+    </Feature>
+
+    <UI>
+      <ui:WixUI Id="WixUI_FeatureTree" InstallDirectory="APPLICATIONFOLDER" />
+      <Publish
+        Dialog="ExitDialog"
+        Control="Finish"
+        Event="DoAction"
+        Value="LaunchApplication"
+        Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+
+    <CustomAction
+      Id="LaunchApplication"
+      BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+      DllEntry="WixShellExec"
+      Execute="immediate"
+      Impersonate="yes"
+      Return="check" />
+
+    <!--
+      The original 2.0.0 MSI removed user data during its nested uninstall. Back up that data
+      around the first major upgrade; packages built from this source skip cleanup whenever
+      UPGRADINGPRODUCTCODE is set, so later upgrades do not need the backup as a safety net.
+    -->
+    <SetProperty
+      Id="WixQuietExecCmdLine"
+      Action="SetBackupLegacyUserDataCommand"
+      Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command &quot;$source = Join-Path $env:LOCALAPPDATA 'Z3950MarcSearch'; $backup = Join-Path $env:LOCALAPPDATA 'Z3950MarcSearch.upgrade-backup'; if (Test-Path -LiteralPath $source) { Remove-Item -LiteralPath $backup -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item -LiteralPath $source -Destination $backup -Recurse -Force }&quot;"
+      Before="BackupLegacyUserData"
+      Sequence="execute"
+      Condition="WIX_UPGRADE_DETECTED" />
+    <SetProperty
+      Id="WixQuietExecCmdLine"
+      Action="SetRestoreLegacyUserDataCommand"
+      Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command &quot;$source = Join-Path $env:LOCALAPPDATA 'Z3950MarcSearch'; $backup = Join-Path $env:LOCALAPPDATA 'Z3950MarcSearch.upgrade-backup'; if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $source -Recurse -Force -ErrorAction SilentlyContinue; Move-Item -LiteralPath $backup -Destination $source -Force }&quot;"
+      Before="RestoreLegacyUserData"
+      Sequence="execute"
+      Condition="WIX_UPGRADE_DETECTED" />
+
+    <CustomAction
+      Id="BackupLegacyUserData"
+      BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+      DllEntry="WixQuietExec"
+      Execute="immediate"
+      Impersonate="yes"
+      Return="check" />
+    <CustomAction
+      Id="RestoreLegacyUserData"
+      BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+      DllEntry="WixQuietExec"
+      Execute="immediate"
+      Impersonate="yes"
+      Return="check" />
+
+    <InstallExecuteSequence>
+      <Custom
+        Action="BackupLegacyUserData"
+        Before="InstallInitialize"
+        Condition="WIX_UPGRADE_DETECTED" />
+      <Custom
+        Action="RestoreLegacyUserData"
+        After="RemoveExistingProducts"
+        Condition="WIX_UPGRADE_DETECTED" />
+    </InstallExecuteSequence>
   </Package>
 </Wix>

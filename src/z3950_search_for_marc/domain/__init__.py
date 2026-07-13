@@ -15,6 +15,7 @@ from .models import (
     ServerDefinition,
     ServerResult,
     ServerStatus,
+    Theme,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "ServerDefinition",
     "ServerResult",
     "ServerStatus",
+    "Theme",
 ]
