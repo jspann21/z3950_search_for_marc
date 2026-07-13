@@ -1,211 +1,140 @@
-"""Qt-based search orchestration over a single bounded thread pool."""
+"""Single-threaded Qt adapter around the asynchronous native ZOOM engine."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from uuid import UUID
 
-from PyQt6.QtCore import QMutex, QMutexLocker, QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
+from PySide6.QtCore import QMetaObject, QObject, Qt, QThread, Signal, Slot
 
-from .backend import CancellationToken, SearchBackend
-from .models import (
-    BackendFailure,
-    BackendResponse,
-    FailureKind,
-    RecordReference,
+from .domain.models import (
     SearchProgress,
     SearchSession,
-    ServerConfig,
-    ServerSearchResult,
+    ServerDefinition,
+    ServerResult,
     ServerStatus,
 )
+from .infrastructure.yaz_engine import CancellationToken, SessionEngine, ZoomSessionEngine
+from .models import RecordReference
 
 
-def _status_for_failure(kind: FailureKind) -> ServerStatus:
-    if kind == FailureKind.TIMEOUT:
-        return ServerStatus.TIMED_OUT
-    if kind == FailureKind.CANCELED:
-        return ServerStatus.CANCELED
-    return ServerStatus.FAILED
+class _EngineWorker(QObject):
+    server_changed = Signal(object)
+    progress_changed = Signal(object)
+    search_finished = Signal(object)
+    record_fetched = Signal(object, object)
 
-
-@dataclass(slots=True)
-class _SessionWork:
-    session: SearchSession
-    cancellation: CancellationToken
-    total: int
-    completed: int = 0
-
-
-class SearchTaskSignals(QObject):
-    status_changed = pyqtSignal(object)
-    completed = pyqtSignal(object)
-
-
-class SearchTask(QRunnable):
-    """Query one server for the initial record."""
-
-    def __init__(
-        self,
-        backend: SearchBackend,
-        work: _SessionWork,
-        server: ServerConfig,
-    ) -> None:
+    def __init__(self, engine: SessionEngine) -> None:
         super().__init__()
-        self.backend = backend
-        self.work = work
-        self.server = server
-        self.signals = SearchTaskSignals()
+        self.engine = engine
+        self._cancellation = CancellationToken()
+        self._active_session_id: UUID | None = None
 
-    @pyqtSlot()
-    def run(self) -> None:
-        session = self.work.session
-        token = self.work.cancellation
-        if token.is_canceled:
-            result = ServerSearchResult(session.id, self.server, ServerStatus.CANCELED)
-            self.signals.status_changed.emit(result)
-            self.signals.completed.emit(session.id)
+    @Slot(object, object, int)
+    def search(
+        self, session: SearchSession, servers: tuple[ServerDefinition, ...], concurrency: int
+    ) -> None:
+        self.cancel_now()
+        self._cancellation = CancellationToken()
+        self._active_session_id = session.id
+        completed = 0
+        for result in self.engine.search_many(
+            session.id, session.request, servers, concurrency, self._cancellation
+        ):
+            if self._active_session_id != session.id:
+                continue
+            self.server_changed.emit(result)
+            completed += 1
+            self.progress_changed.emit(SearchProgress(session.id, completed, len(servers)))
+        if self._active_session_id == session.id:
+            self.search_finished.emit(session.id)
+
+    @Slot(object)
+    def fetch(self, reference: RecordReference) -> None:
+        if reference.session_id != self._active_session_id:
             return
-
-        self.signals.status_changed.emit(
-            ServerSearchResult(session.id, self.server, ServerStatus.SEARCHING)
+        result = self.engine.fetch_record(
+            reference.session_id,
+            reference.server.id,
+            reference.position,
+            self._cancellation,
         )
-        backend_result = self.backend.search_server(session.request, self.server, 1, token)
-        if isinstance(backend_result, BackendResponse):
-            status = (
-                ServerStatus.SUCCESS if backend_result.number_of_hits > 0 else ServerStatus.EMPTY
-            )
-            result = ServerSearchResult(
-                session.id,
-                self.server,
-                status,
-                backend_result.number_of_hits,
-                backend_result.cleaned_data,
-            )
-        else:
-            result = ServerSearchResult(
-                session.id,
-                self.server,
-                _status_for_failure(backend_result.kind),
-                message=backend_result.message,
-            )
-        self.signals.status_changed.emit(result)
-        self.signals.completed.emit(session.id)
+        self.record_fetched.emit(reference, result)
 
+    def cancel_now(self) -> None:
+        self._cancellation.cancel()
+        if self._active_session_id is not None:
+            self.engine.cancel(self._active_session_id)
+        self._active_session_id = None
 
-class RecordTaskSignals(QObject):
-    completed = pyqtSignal(object, object)
-
-
-class RecordTask(QRunnable):
-    """Fetch one record position for an existing search session."""
-
-    def __init__(
-        self,
-        backend: SearchBackend,
-        work: _SessionWork,
-        reference: RecordReference,
-    ) -> None:
-        super().__init__()
-        self.backend = backend
-        self.work = work
-        self.reference = reference
-        self.signals = RecordTaskSignals()
-
-    @pyqtSlot()
-    def run(self) -> None:
-        result = self.backend.search_server(
-            self.work.session.request,
-            self.reference.server,
-            self.reference.position,
-            self.work.cancellation,
-        )
-        self.signals.completed.emit(self.reference, result)
+    @Slot()
+    def close(self) -> None:
+        self.cancel_now()
+        self.engine.close()
 
 
 class SearchCoordinator(QObject):
-    """Coordinate search tasks, cancellation, progress, and stale-session isolation."""
+    server_changed = Signal(object)
+    progress_changed = Signal(object)
+    search_finished = Signal(object)
+    record_fetched = Signal(object, object)
+    _search_requested = Signal(object, object, int)
+    _fetch_requested = Signal(object)
 
-    server_changed = pyqtSignal(object)
-    progress_changed = pyqtSignal(object)
-    search_finished = pyqtSignal(object)
-    record_fetched = pyqtSignal(object, object)
-
-    def __init__(self, backend: SearchBackend, parent: QObject | None = None) -> None:
+    def __init__(self, engine: SessionEngine | None = None, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self.backend = backend
-        self.pool = QThreadPool(self)
-        self._work: _SessionWork | None = None
-        self._mutex = QMutex()
+        self.engine = engine or ZoomSessionEngine()
+        self.worker_thread = QThread(self)
+        self.worker = _EngineWorker(self.engine)
+        self.worker.moveToThread(self.worker_thread)
+        self._search_requested.connect(self.worker.search)
+        self._fetch_requested.connect(self.worker.fetch)
+        self.worker.server_changed.connect(self.server_changed)
+        self.worker.progress_changed.connect(self.progress_changed)
+        self.worker.search_finished.connect(self.search_finished)
+        self.worker.record_fetched.connect(self.record_fetched)
+        self.worker_thread.start()
+        self._active_session_id: UUID | None = None
 
     @property
     def active_session_id(self) -> UUID | None:
-        return self._work.session.id if self._work else None
+        return self._active_session_id
 
     def start(
         self,
         session: SearchSession,
-        servers: list[ServerConfig],
+        servers: list[ServerDefinition],
         max_concurrent: int,
     ) -> None:
         self.cancel()
-        self.pool.setMaxThreadCount(max_concurrent)
-        work = _SessionWork(session, CancellationToken(), len(servers))
-        self._work = work
+        self._active_session_id = session.id
         for server in servers:
-            self.server_changed.emit(ServerSearchResult(session.id, server, ServerStatus.PENDING))
+            self.server_changed.emit(ServerResult(session.id, server, ServerStatus.PENDING))
         if not servers:
             self.progress_changed.emit(SearchProgress(session.id, 0, 0))
             self.search_finished.emit(session.id)
             return
-        for server in servers:
-            task = SearchTask(self.backend, work, server)
-            task.signals.status_changed.connect(self._forward_status)
-            task.signals.completed.connect(self._on_task_completed)
-            self.pool.start(task)
+        self._search_requested.emit(session, tuple(servers), max_concurrent)
 
     def fetch_record(self, reference: RecordReference) -> None:
-        work = self._work
-        if work is None or work.session.id != reference.session_id:
-            return
-        task = RecordTask(self.backend, work, reference)
-        task.signals.completed.connect(self._on_record_completed)
-        self.pool.start(task)
+        if reference.session_id == self._active_session_id:
+            self._fetch_requested.emit(reference)
 
     def cancel(self) -> None:
-        work = self._work
-        if work is not None:
-            self.backend.cancel(work.cancellation)
-        self.pool.clear()
+        self.worker.cancel_now()
+        self._active_session_id = None
 
-    def shutdown(self, timeout_ms: int = 2500) -> None:
+    def shutdown(self, timeout_ms: int = 7000) -> None:
         self.cancel()
-        self.pool.waitForDone(timeout_ms)
-        close = getattr(self.backend, "close", None)
-        if callable(close):
-            close()
+        if self.worker_thread.isRunning():
+            QMetaObject.invokeMethod(
+                self.worker,
+                "close",
+                Qt.ConnectionType.BlockingQueuedConnection,
+            )
+        self.worker_thread.quit()
+        self.worker_thread.wait(timeout_ms)
 
-    @pyqtSlot(object)
-    def _forward_status(self, result: ServerSearchResult) -> None:
-        if self._work is None or result.session_id != self._work.session.id:
-            return
-        self.server_changed.emit(result)
 
-    @pyqtSlot(object)
-    def _on_task_completed(self, session_id: UUID) -> None:
-        work = self._work
-        if work is None or work.session.id != session_id:
-            return
-        with QMutexLocker(self._mutex):
-            work.completed += 1
-            progress = SearchProgress(session_id, work.completed, work.total)
-        self.progress_changed.emit(progress)
-        if progress.completed == progress.total:
-            self.search_finished.emit(session_id)
-
-    @pyqtSlot(object, object)
-    def _on_record_completed(self, reference: RecordReference, result: object) -> None:
-        if self._work is None or reference.session_id != self._work.session.id:
-            return
-        if isinstance(result, (BackendResponse, BackendFailure)):
-            self.record_fetched.emit(reference, result)
+# Compatibility aliases retained for imports from the 1.0 development branch.
+SearchTask = _EngineWorker
+RecordTask = _EngineWorker

@@ -1,10 +1,11 @@
-"""Application dialogs."""
+"""Settings and catalog import dialogs."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QFileDialog,
@@ -19,30 +20,31 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from .backend import resolve_yaz_executable
-from .config import load_servers, resolve_server_catalog_path
-from .models import AppSettings
+from .domain.models import AppSettings
 
 
 class SettingsDialog(QDialog):
-    """Validated settings editor backed by the existing AppSettings schema."""
-
-    def __init__(self, settings: AppSettings, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        settings: AppSettings,
+        *,
+        engine_version: str,
+        catalog_version: str,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Settings")
-        self.setMinimumWidth(590)
+        self.setMinimumWidth(610)
         self._saved_settings: AppSettings | None = None
+        self._legacy_catalog_path: Path | None = None
 
         intro = QLabel(
-            "Configure the YAZ client, server catalog, search limits, and record export defaults.",
+            f"Embedded YAZ {engine_version} · Server catalog {catalog_version}. "
+            "No external protocol software is required.",
             self,
         )
         intro.setWordWrap(True)
         intro.setStyleSheet("color: #526176;")
-
-        self.yaz_path_input = QLineEdit(settings.yaz_executable, self)
-        self.server_catalog_input = QLineEdit(settings.server_catalog_path, self)
-        self.server_catalog_input.setPlaceholderText("Bundled catalog")
         self.max_threads_input = QSpinBox(self)
         self.max_threads_input.setRange(1, 32)
         self.max_threads_input.setValue(settings.max_concurrent_queries)
@@ -51,21 +53,29 @@ class SettingsDialog(QDialog):
         self.timeout_input.setSuffix(" seconds")
         self.timeout_input.setValue(settings.server_timeout_seconds)
         self.default_save_directory_input = QLineEdit(settings.default_save_directory, self)
-        self.trim_records_checkbox = QCheckBox("Remove tags 000–009 and 900+", self)
+        self.trim_records_checkbox = QCheckBox(
+            "Hide and remove tags 000–009 and 900+ from exported records", self
+        )
         self.trim_records_checkbox.setChecked(settings.trim_records)
+        self.automatic_updates_checkbox = QCheckBox("Update the server catalog automatically", self)
+        self.automatic_updates_checkbox.setChecked(settings.automatic_catalog_updates)
+        self.import_catalog_input = QLineEdit(self)
+        self.import_catalog_input.setReadOnly(True)
+        self.import_catalog_input.setPlaceholderText("No legacy catalog selected")
 
         form = QFormLayout()
-        form.addRow("YAZ executable", self._browse_row(self.yaz_path_input, self._browse_yaz_path))
-        form.addRow(
-            "Server catalog", self._browse_row(self.server_catalog_input, self._browse_catalog_path)
-        )
-        form.addRow("Concurrent queries", self.max_threads_input)
+        form.addRow("Concurrent targets", self.max_threads_input)
         form.addRow("Server timeout", self.timeout_input)
         form.addRow(
             "Save directory",
             self._browse_row(self.default_save_directory_input, self._browse_save_directory),
         )
         form.addRow("Record trimming", self.trim_records_checkbox)
+        form.addRow("Catalog updates", self.automatic_updates_checkbox)
+        form.addRow(
+            "Import old JSON",
+            self._browse_row(self.import_catalog_input, self._browse_legacy_catalog),
+        )
 
         save_button = QPushButton("Save settings", self)
         save_button.setProperty("primary", True)
@@ -76,7 +86,6 @@ class SettingsDialog(QDialog):
         actions.addStretch(1)
         actions.addWidget(cancel_button)
         actions.addWidget(save_button)
-
         layout = QVBoxLayout(self)
         layout.addWidget(intro)
         layout.addSpacing(8)
@@ -88,32 +97,19 @@ class SettingsDialog(QDialog):
     def saved_settings(self) -> AppSettings | None:
         return self._saved_settings
 
-    def _browse_row(self, field: QLineEdit, callback: object) -> QWidget:
+    @property
+    def legacy_catalog_path(self) -> Path | None:
+        return self._legacy_catalog_path
+
+    def _browse_row(self, field: QLineEdit, callback: Callable[[], None]) -> QWidget:
         container = QWidget(self)
         row = QHBoxLayout(container)
         row.setContentsMargins(0, 0, 0, 0)
         row.addWidget(field, 1)
         button = QPushButton("Browse…", container)
-        button.clicked.connect(callback)  # type: ignore[arg-type]
+        button.clicked.connect(callback)
         row.addWidget(button)
         return container
-
-    def _browse_yaz_path(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select yaz-client executable", self.yaz_path_input.text()
-        )
-        if file_path:
-            self.yaz_path_input.setText(file_path)
-
-    def _browse_catalog_path(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select server catalog",
-            self.server_catalog_input.text() or str(Path.home()),
-            "JSON files (*.json)",
-        )
-        if file_path:
-            self.server_catalog_input.setText(file_path)
 
     def _browse_save_directory(self) -> None:
         directory = QFileDialog.getExistingDirectory(
@@ -124,37 +120,27 @@ class SettingsDialog(QDialog):
         if directory:
             self.default_save_directory_input.setText(directory)
 
+    def _browse_legacy_catalog(self) -> None:
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import legacy server JSON",
+            str(Path.home()),
+            "JSON files (*.json)",
+        )
+        if file_name:
+            self._legacy_catalog_path = Path(file_name)
+            self.import_catalog_input.setText(file_name)
+
     def _save(self) -> None:
-        candidate = AppSettings(
-            yaz_executable=self.yaz_path_input.text(),
-            server_catalog_path=self.server_catalog_input.text(),
+        directory = Path(self.default_save_directory_input.text()).expanduser()
+        if not directory.is_dir():
+            QMessageBox.warning(self, "Invalid save directory", "Choose an existing directory.")
+            return
+        self._saved_settings = AppSettings(
             max_concurrent_queries=self.max_threads_input.value(),
             server_timeout_seconds=self.timeout_input.value(),
-            default_save_directory=self.default_save_directory_input.text(),
+            default_save_directory=str(directory),
             trim_records=self.trim_records_checkbox.isChecked(),
+            automatic_catalog_updates=self.automatic_updates_checkbox.isChecked(),
         ).normalized()
-
-        if resolve_yaz_executable(candidate.yaz_executable) is None:
-            QMessageBox.warning(
-                self,
-                "YAZ executable not found",
-                "The selected yaz-client executable could not be found. "
-                "Choose its full path or install YAZ and add it to PATH.",
-            )
-            return
-        try:
-            load_servers(resolve_server_catalog_path(candidate.server_catalog_path))
-        except (OSError, ValueError) as exc:
-            QMessageBox.warning(self, "Invalid server catalog", str(exc))
-            return
-        save_directory = Path(candidate.default_save_directory).expanduser()
-        if not save_directory.is_dir():
-            QMessageBox.warning(
-                self,
-                "Invalid save directory",
-                "Choose an existing directory for exported MARC records.",
-            )
-            return
-
-        self._saved_settings = candidate
         self.accept()

@@ -1,0 +1,49 @@
+<Wix
+  xmlns="http://wixtoolset.org/schemas/v4/wxs"
+  xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package
+    Name="Z39.50 MARC Search"
+    Version="2.0.0"
+    Manufacturer="Jeremy Spann"
+    UpgradeCode="5C76EA3A-534B-47F1-8CB2-72E937DF4B8F"
+    Scope="perUser">
+    <SummaryInformation Description="Self-contained Z39.50 MARC desktop search client" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Z39.50 MARC Search" />
+      </Directory>
+    </StandardDirectory>
+
+    <Property Id="USERDATADIR" Value="%LOCALAPPDATA%\Z3950MarcSearch" />
+    <Property Id="PRESERVEUSERDATA" Value="0" Secure="yes" />
+
+    <Files Include="$(PublishDir)\**" Directory="INSTALLFOLDER">
+      <Exclude Files="$(PublishDir)\Z3950MarcSearch.exe" />
+    </Files>
+    <File Source="$(PublishDir)\Z3950MarcSearch.exe" Directory="INSTALLFOLDER">
+      <Shortcut
+        Id="StartMenuShortcut"
+        Directory="ProgramMenuFolder"
+        Name="Z39.50 MARC Search"
+        Description="Search Z39.50 targets and export MARC records"
+        WorkingDirectory="INSTALLFOLDER" />
+    </File>
+
+    <Component Id="UserDataCleanup" Directory="INSTALLFOLDER" Guid="*">
+      <RegistryValue
+        Root="HKCU"
+        Key="Software\Jeremy Spann\Z3950MarcSearch"
+        Name="Installed"
+        Type="integer"
+        Value="1"
+        KeyPath="yes" />
+      <util:RemoveFolderEx
+        Id="RemoveUserData"
+        Property="USERDATADIR"
+        On="uninstall"
+        Condition="PRESERVEUSERDATA &lt;&gt; 1" />
+    </Component>
+  </Package>
+</Wix>

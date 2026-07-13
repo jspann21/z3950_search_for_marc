@@ -1,0 +1,50 @@
+name: Publish server catalog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "catalog/servers.v2.json"
+      - "catalog/servers.v2.schema.json"
+      - "site/catalog/**"
+      - "tools/publish_catalog.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14.3"
+      - run: uv sync --locked
+      - name: Sign active server catalog
+        shell: bash
+        env:
+          CATALOG_SIGNING_KEY: ${{ secrets.CATALOG_SIGNING_KEY }}
+        run: |
+          if [ -z "$CATALOG_SIGNING_KEY" ]; then
+            echo "CATALOG_SIGNING_KEY repository secret is required" >&2
+            exit 1
+          fi
+          printf '%s' "$CATALOG_SIGNING_KEY" > "$RUNNER_TEMP/catalog-private-key.pem"
+          uv run python tools/publish_catalog.py --private-key "$RUNNER_TEMP/catalog-private-key.pem"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

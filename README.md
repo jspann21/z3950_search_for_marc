@@ -1,164 +1,125 @@
-# Z39.50 MARC Search
+# Z39.50 MARC Search 2.0
 
-A Windows-first desktop application for searching many Z39.50 library servers, reviewing
-MARC records, and exporting individual records as binary `.mrc` files.
+A Windows-first desktop application that searches many Z39.50 library targets, displays MARC
+records, and exports valid ISO2709 `.mrc` files. Version 2 is self-contained: the MSI includes
+Python, Qt, YAZ, and the native runtime libraries it needs. End users do not install Python,
+`yaz-client`, or a Visual C++ redistributable separately.
 
-The application supports ISBN and title/author searches, incremental results, USA and worldwide
-server filters, on-demand record navigation, cancelable concurrent queries, persistent settings,
-custom server catalogs, and optional MARC field trimming.
+## What changed in 2.0
 
-## Requirements
+- PySide6 model/view UI with incremental results, sorting, keyboard navigation, activity details,
+  cancellation, and retained result-set navigation.
+- YAZ 5.37.3 embedded through its native asynchronous ZOOM C API and a compiled CFFI adapter.
+  There are no subprocesses and no console-text parsing.
+- Exact ISO2709 bytes are retained for every fetched record. PyMARC 5.4 handles MARC-8/UTF-8
+  parsing and valid serialization.
+- Versioned, schema-validated server catalog with signed independent updates, custom-server
+  overlays, local disabled IDs, offline fallback, and conservative two-runner health automation.
+- Atomic JSON settings under `%LOCALAPPDATA%\Z3950MarcSearch`, including one-time migration from
+  the former Qt settings. The obsolete YAZ executable setting is intentionally ignored.
 
-- Windows 10 or later for the packaged application
-- Python 3.12 or later when running from source
-- [Index Data YAZ](https://www.indexdata.com/resources/software/yaz/) with `yaz-client`
+## Search and export behavior
 
-YAZ is an external prerequisite. It is not embedded in the application executable. After
-installing YAZ, either add its `bin` directory to `PATH` or select `yaz-client.exe` in the
-application's Settings dialog.
+Search by ISBN-10/ISBN-13 or by title and author, choose USA and/or worldwide targets, then select
+any successful server to view its first result. Previous and Next navigate the live retained ZOOM
+result set. One failed server never aborts the remaining targets.
 
-## Install and run from source
+The export mode is always shown in the record panel:
 
-```powershell
-git clone https://github.com/jspann21/z3950_search_for_marc.git
-cd z3950_search_for_marc
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e .
-python main.py
-```
+- **Original export** writes the exact bytes received from the server.
+- **Trimmed export** clones the parsed record, removes tags `000–009` and `900+`, and serializes a
+  new valid ISO2709 record. Display trimming uses the same policy.
 
-The following entry points are equivalent:
+Defaults are 12 concurrent targets, a five-second target timeout, both location groups, Downloads
+as the export directory, automatic catalog updates, and trimming enabled.
 
-```powershell
-python main.py
-python -m z3950_search_for_marc
-z3950-search
-```
+## Run from source
 
-## Searching
-
-1. Choose **ISBN** or **Title + author** in the left panel.
-2. Enter a valid ISBN-10/ISBN-13, or both a title and an author.
-3. Select the United States, Worldwide, or both location filters.
-4. Select **Search servers**.
-5. Choose a successful server in the results table to inspect its first MARC record.
-6. Use **Previous** and **Next** to fetch and navigate that server's result set.
-7. Select **Export .mrc…** to save the displayed record.
-
-Results appear as servers finish; one unavailable server does not interrupt the rest of the
-search. The progress summary distinguishes successful, empty, failed, timed-out, and canceled
-queries. The Activity panel contains timestamped diagnostic details.
-
-Live Z39.50 endpoints are maintained by other organizations. A timeout or connection failure
-usually indicates that a particular target is unavailable or has changed, not that the desktop
-application failed.
-
-## Settings
-
-Settings persist under the existing `z3950_search_for_marc` organization and application keys,
-so preferences from version 0.2 are reused automatically.
-
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| YAZ executable | `yaz-client` | Command name or full path to `yaz-client.exe` |
-| Server catalog | Bundled catalog | Optional custom JSON server list |
-| Concurrent queries | 12 | Maximum active server processes, bounded from 1 to 32 |
-| Server timeout | 5 seconds | Per-server and per-record request timeout |
-| Save directory | Downloads | Initial directory for `.mrc` exports |
-| Record trimming | Enabled | Removes tags `000–009` and `900+` from displayed/exported records |
-
-Settings validates the YAZ executable, catalog, and export directory before saving. Invalid
-changes remain in the dialog for correction and do not replace the current working settings.
-
-## Server catalogs
-
-The packaged application contains a catalog of 372 servers. A custom catalog uses the same JSON
-array format as earlier releases:
-
-```json
-[
-  {
-    "name": "Library of Congress",
-    "host": "z3950.loc.gov",
-    "port": 7090,
-    "database": "VOYAGER",
-    "location": "USA"
-  },
-  {
-    "name": "Example Library",
-    "host": "catalog.example.org",
-    "port": "210",
-    "database": "books",
-    "location": "Worldwide"
-  }
-]
-```
-
-`port` may be a JSON number or numeric string. `location` must be `USA` or `Worldwide`.
-Library of Congress entries are queried first.
-
-## Troubleshooting
-
-### YAZ client required
-
-Open Settings and select the complete path to `yaz-client.exe`. The application checks the saved
-path, `PATH`, and common Windows YAZ installation locations.
-
-### Most servers time out
-
-Try one location group, reduce concurrent queries on a constrained connection, or increase the
-server timeout. Individual public catalogs frequently go offline or change their connection
-details.
-
-### International text looks incorrect
-
-The application recognizes UTF-8 and common legacy YAZ console encodings including CP850 and
-CP1252. Include the original Activity output and server endpoint when reporting a remaining
-encoding problem.
-
-### A custom catalog will not load
-
-Confirm that the file contains a JSON array and every entry has non-empty `name`, `host`,
-`database`, `port`, and `location` values. The Settings dialog reports the first invalid entry.
-
-## Development
-
-Install the editable package and quality tools:
+Development uses Python 3.14 and the committed `uv.lock`:
 
 ```powershell
-python -m pip install -e ".[dev]"
-python -m ruff format --check .
-python -m ruff check .
-python -m mypy src tests
-python -m pytest
+uv python install 3.14
+uv sync --locked --extra dev
+./scripts/build_yaz.ps1
+uv run z3950-search
 ```
 
-The offline test suite uses controlled backends and subprocesses; it does not require YAZ or
-internet access. It covers query construction, catalog and settings compatibility, MARC parsing
-and decoding, subprocess timeout/cancellation, bounded search orchestration, stale-session
-isolation, complete Qt search/navigation/export workflows, and application startup.
+`build_yaz.ps1` downloads the pinned YAZ source archive, verifies its SHA-256 digest, builds the
+x64 DLL and test server with Visual Studio Build Tools, and compiles the CFFI extension. The
+resulting binaries are build artifacts and are intentionally not committed.
 
-The main layers are:
-
-- `models.py`: domain types, settings, sessions, results, and record cache state
-- `backend.py`: `SearchBackend`, executable discovery, and cancellable YAZ processes
-- `search.py`: bounded Qt task orchestration and stale-session isolation
-- `widgets.py` and `dialogs.py`: focused UI components
-- `app.py`: application composition and user workflow coordination
-
-## Build the Windows executable
+## Verification
 
 ```powershell
-python -m pip install -e ".[dev,package]"
-python -m PyInstaller --clean --noconfirm main.spec
-& .\dist\z3950_search_for_marc-1.0.0.exe --smoke-test
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src tests
+uv run pytest -m "not native"
+uv run pytest -m native
+uv run python -m z3950_search_for_marc --self-test
 ```
 
-The executable includes the application icon and bundled server catalog. GitHub Actions runs the
-quality suite across supported Python versions and desktop operating systems, then builds,
-smoke-tests, and uploads the versioned Windows artifact.
+The native tests start the pinned local `yaz-ztest` target and exercise initialization, concurrent
+target isolation, search, present, raw-record retrieval, navigation, and cleanup without relying
+on a public server.
+
+## Server catalog
+
+The bundled catalog is [`catalog/servers.v2.json`](catalog/servers.v2.json), validated by
+[`catalog/servers.v2.schema.json`](catalog/servers.v2.schema.json). Its 372 migrated endpoints have
+stable UUIDs, numeric ports, normalized endpoint uniqueness, status history, charset metadata, and
+Library of Congress priority.
+
+At most once every 24 hours—or when the user chooses Check now—the application fetches the
+manifest from the configured GitHub Pages HTTPS origin. It validates the final origin, Ed25519
+signature, SHA-256 digest, schema compatibility, IDs, ports, and duplicates before atomically
+installing the cache. Startup uses the cached last-known-good catalog, then the bundled catalog.
+A bad download cannot replace either.
+
+Legacy JSON arrays can be imported from Settings. They are converted to a separate v2 custom
+catalog and are never used as live upstream storage. Local disabled IDs are also kept in their own
+file. No user queries or failure telemetry are collected.
+
+Catalog maintainers can sign a publication with:
+
+```powershell
+uv run python tools/publish_catalog.py `
+  --private-key path/to/catalog-private-key.pem
+```
+
+The private Ed25519 key must remain outside source control. See
+[`catalog/README.md`](catalog/README.md) for health and release policy.
+
+## Windows MSI
+
+```powershell
+./scripts/package_windows.ps1
+```
+
+This performs a locked sync, rebuilds YAZ, creates a Nuitka standalone directory, runs the
+packaged `--self-test`, and wraps it in `dist/Z3950MarcSearch-2.0.0-x64.msi` with WiX. CI repeats
+the clean build and publishes the MSI, checksums, standalone inspection artifact, GPL license, and
+YAZ notice. Application auto-update is deliberately outside 2.0; server catalog updates are
+independent.
+
+The MSI is per-user and does not require administrator rights; it installs under
+`%LOCALAPPDATA%\Programs\Z39.50 MARC Search` and adds a Start menu shortcut.
+
+Uninstall removes application-owned `%LOCALAPPDATA%\Z3950MarcSearch` data by default. An
+administrator can explicitly retain it with `PRESERVEUSERDATA=1` on the `msiexec /x` command.
+
+## Architecture
+
+- `domain/`: immutable Qt-free requests, sessions, records, settings, results, and failures.
+- `infrastructure/`: native ZOOM engine, atomic persistence, catalog verification, and app paths.
+- `ui/`, `widgets.py`, and `dialogs.py`: Qt models, views, and accessible controls.
+- `search.py`: the dedicated worker that owns all native YAZ handles.
+- `catalog_health.py`: scheduled probes and quarantine/recovery policy.
+- `native/`, `scripts/`, and `installer/`: reproducible native and MSI delivery.
+
+The preserved passing 1.0 implementation is available on `codex/legacy-python-baseline`; 2.0 is
+built on `codex/rebuild-v2`.
 
 ## License
 
-GNU General Public License v3.0. See [LICENSE](LICENSE).
+GNU GPL v3.0. YAZ is redistributed under its BSD license; see the packaged `YAZ-LICENSE.txt`.

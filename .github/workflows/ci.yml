@@ -6,60 +6,56 @@ on:
 
 jobs:
   quality:
-    name: Python ${{ matrix.python-version }} · ${{ matrix.os }}
+    name: Python 3.14 · ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.12", "3.13", "3.14"]
+        os: [windows-latest, ubuntu-latest]
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-      - name: Install development dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -e .[dev]
-      - name: Check formatting
-        run: python -m ruff format --check .
-      - name: Lint
-        run: python -m ruff check .
-      - name: Type check
-        run: python -m mypy src tests
-      - name: Test
-        run: python -m pytest
+          python-version: "3.14.3"
+          enable-cache: true
+      - run: uv sync --locked --extra dev
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy src tests
+      - run: uv run pytest -m "not native" --junitxml=test-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: test-results.xml
 
-  windows-package:
-    name: Windows package
+  native-windows:
+    name: Embedded YAZ and Windows package
     runs-on: windows-latest
     needs: quality
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install packaging dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -e .[dev,package]
-      - name: Build executable
-        run: python -m PyInstaller --clean --noconfirm main.spec
-      - name: Launch smoke test
-        shell: pwsh
-        run: |
-          $process = Start-Process `
-            -FilePath "dist/z3950_search_for_marc-1.0.0.exe" `
-            -ArgumentList "--smoke-test" `
-            -WindowStyle Hidden `
-            -Wait `
-            -PassThru
-          exit $process.ExitCode
+          python-version: "3.14.3"
+          enable-cache: true
+      - run: uv sync --locked --extra dev --extra package
+      - shell: pwsh
+        run: ./scripts/build_yaz.ps1
+      - run: uv run pytest -m native
+      - shell: pwsh
+        run: ./scripts/package_windows.ps1
+      - shell: pwsh
+        run: ./scripts/test_msi.ps1
       - uses: actions/upload-artifact@v4
         with:
-          name: z3950-search-for-marc-1.0.0-windows
-          path: dist/z3950_search_for_marc-1.0.0.exe
+          name: Z3950MarcSearch-2.0.0-Windows-x64
+          path: |
+            dist/Z3950MarcSearch-2.0.0-x64.msi
+            dist/SHA256SUMS.txt
+            dist/main.dist/**
           if-no-files-found: error

@@ -1,0 +1,88 @@
+name: Server catalog health
+
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  probe:
+    name: Probe · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            runner: windows
+          - os: ubuntu-latest
+            runner: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14.3"
+      - run: uv sync --locked --extra dev
+      - name: Build embedded YAZ on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/build_yaz.ps1
+      - name: Install and build YAZ adapter on Ubuntu
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libyaz-dev yaz
+          mkdir -p native/yaz/include native/yaz/lib native/yaz/bin
+          cp -R /usr/include/yaz native/yaz/include/
+          cp /usr/lib/x86_64-linux-gnu/libyaz.so native/yaz/lib/
+          YAZ_HOME="$PWD/native/yaz" uv run python native/build_yaz_ffi.py
+      - run: >-
+          uv run z3950-catalog-health probe
+          --catalog catalog/servers.v2.json
+          --schema catalog/servers.v2.schema.json
+          --runner ${{ matrix.runner }}
+          --output probe-${{ matrix.runner }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe-${{ matrix.runner }}
+          path: probe-${{ matrix.runner }}.json
+
+  aggregate:
+    runs-on: ubuntu-latest
+    needs: probe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14.3"
+      - run: uv sync --locked --extra dev
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: probe-*
+          merge-multiple: true
+      - run: >-
+          uv run z3950-catalog-health aggregate
+          --catalog catalog/servers.v2.json
+          --state catalog/health-state.json
+          --runner-result probe-windows.json
+          --runner-result probe-ubuntu.json
+          --output-catalog catalog/servers.v2.json
+          --output-state catalog/health-state.json
+          --transition-report catalog/transitions.json
+      - name: Create status-transition pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/catalog-health
+          delete-branch: true
+          commit-message: "Update server catalog health"
+          title: "Update server catalog health"
+          body: >-
+            Automated two-runner health update. Quarantine and recovery transitions
+            follow the seven-failure/two-success policy. Retirement candidates require
+            maintainer review and are never retired automatically.

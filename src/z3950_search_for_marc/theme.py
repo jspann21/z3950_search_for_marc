@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 APP_STYLESHEET = """
 QMainWindow, QDialog { background: #f5f7fa; }
@@ -16,13 +16,13 @@ QGroupBox {
     font-weight: 600;
 }
 QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 5px; }
-QLineEdit, QSpinBox, QTabWidget::pane, QTableWidget, QPlainTextEdit {
+QLineEdit, QSpinBox, QTabWidget::pane, QTableView, QPlainTextEdit {
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 5px;
 }
 QLineEdit, QSpinBox { min-height: 30px; padding: 0 7px; }
-QLineEdit:focus, QSpinBox:focus, QTableWidget:focus, QPlainTextEdit:focus {
+QLineEdit:focus, QSpinBox:focus, QTableView:focus, QPlainTextEdit:focus {
     border: 1px solid #2563eb;
 }
 QPushButton {
@@ -50,7 +50,7 @@ QHeaderView::section {
     padding: 7px;
     font-weight: 600;
 }
-QTableWidget {
+QTableView {
     gridline-color: #e6ebf2;
     selection-background-color: #dbeafe;
     selection-color: #172033;

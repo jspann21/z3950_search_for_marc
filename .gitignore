@@ -11,6 +11,10 @@ htmlcov/
 venv/
 build/
 dist/
+native/yaz/
+src/z3950_search_for_marc/native/*.dll
+.secrets/
+*.pem.tmp
 *.egg-info/
 *.spec.bak
 .idea/

@@ -1,0 +1,31 @@
+Z39.50 MARC Search 2.0 — Third-Party Notices
+================================================
+
+This application is distributed under GNU GPL v3.0. Its standalone Windows package includes
+the following principal third-party components. Complete package license metadata remains
+available from each named upstream project and the Python package metadata in the distribution.
+
+Python 3.14 — Python Software Foundation License
+https://www.python.org/psf/license/
+
+Qt for Python / PySide6 — GNU LGPL v3
+https://doc.qt.io/qtforpython-6/licenses.html
+
+YAZ 5.37.3 — BSD 3-Clause license
+https://software.indexdata.com/yaz/doc/license.html
+The complete YAZ license text is included as YAZ-LICENSE.txt.
+
+PyMARC — BSD 2-Clause license
+https://github.com/pymarc/pymarc
+
+CFFI — MIT license
+https://cffi.readthedocs.io/
+
+cryptography — Apache License 2.0 or BSD 3-Clause license
+https://github.com/pyca/cryptography
+
+jsonschema — MIT license
+https://github.com/python-jsonschema/jsonschema
+
+platformdirs — MIT license
+https://github.com/tox-dev/platformdirs
