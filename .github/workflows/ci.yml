@@ -113,7 +113,7 @@ jobs:
         with:
           python-version: "3.14.3"
           enable-cache: true
-      - run: uv sync --locked --extra package
+      - run: uv sync --locked --extra dev --extra package
       - shell: pwsh
         run: ./scripts/build_yaz.ps1
       - shell: pwsh
