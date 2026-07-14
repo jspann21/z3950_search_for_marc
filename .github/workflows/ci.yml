@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches: [main]
+    tags: ["v*"]
   pull_request:
 
 jobs:
@@ -27,12 +29,77 @@ jobs:
           name: test-results-windows
           path: test-results.xml
 
+  packaging_scope:
+    name: Detect installer-related changes
+    runs-on: ubuntu-latest
+    outputs:
+      required: ${{ steps.changes.outputs.required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check changed paths
+        id: changes
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+            echo "Installer required for release tag." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            base="$PR_BASE_SHA"
+            head="$PR_HEAD_SHA"
+          elif [[ -n "$BEFORE_SHA" && ! "$BEFORE_SHA" =~ ^0+$ ]] && \
+            git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            base="$BEFORE_SHA"
+            head="$GITHUB_SHA"
+          else
+            echo "required=true" >> "$GITHUB_OUTPUT"
+            echo "Installer required because the comparison base is unavailable." \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          changed_files=$(git diff --name-only "$base" "$head")
+          pattern='^(\.github/workflows/ci\.yml|LICENSE|pyproject\.toml|uv\.lock|scripts/(build_yaz|package_windows|test_msi)\.ps1|native/|src/z3950_search_for_marc/(native|resources)/)'
+          if printf '%s\n' "$changed_files" | grep -Eq "$pattern"; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+            echo "Installer-related files changed; packaging will run." \
+              >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "No installer-related files changed; packaging will be skipped." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   native-windows:
-    name: Embedded YAZ and Windows package
+    name: Embedded YAZ native tests
     runs-on: windows-latest
     needs: quality
     env:
       QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8.3.2
+        with:
+          python-version: "3.14.3"
+          enable-cache: true
+      - run: uv sync --locked --extra dev
+      - shell: pwsh
+        run: ./scripts/build_yaz.ps1
+      - run: uv run pytest -m native
+
+  package-windows:
+    name: Build and test Windows installer
+    if: needs.packaging_scope.outputs.required == 'true'
+    runs-on: windows-latest
+    needs: [quality, native-windows, packaging_scope]
     steps:
       - uses: actions/checkout@v7
       - name: Read package version
@@ -49,7 +116,6 @@ jobs:
       - run: uv sync --locked --extra dev --extra package
       - shell: pwsh
         run: ./scripts/build_yaz.ps1
-      - run: uv run pytest -m native
       - shell: pwsh
         run: ./scripts/package_windows.ps1
       - shell: pwsh
@@ -67,7 +133,7 @@ jobs:
     name: Publish tagged GitHub release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    needs: native-windows
+    needs: package-windows
     permissions:
       contents: write
     steps:

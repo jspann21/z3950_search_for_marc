@@ -23,6 +23,6 @@ def atomic_write_bytes(path: Path, data: bytes) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def atomic_write_json(path: Path, value: Any) -> None:
-    payload = json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+def atomic_write_json(path: Path, value: Any, *, sort_keys: bool = True) -> None:
+    payload = json.dumps(value, ensure_ascii=False, indent=2, sort_keys=sort_keys) + "\n"
     atomic_write_bytes(path, payload.encode("utf-8"))
