@@ -22,17 +22,24 @@ Directory entries were discovery inputs only: no endpoint was activated unless i
 protocol and MARC probe. The supported LOC bibliographic targets are first in runtime order: LCDB at
 priority 0 and NLSBPH at priority 10.
 
-The daily workflow probes every non-retired endpoint from Windows and Linux. Each probe performs
+The weekly workflow probes every non-retired endpoint from Windows and Linux. Each probe performs
 Z39.50 initialization, a valid Bib-1 search, and MARC validation when hits exist. A valid zero-hit
 response is healthy. Failures are recorded by typed category (DNS, connection, initialization,
 timeout, diagnostic, malformed response, or record parsing).
 
+Rolling observations and counters are maintained automatically on the
+`automation/catalog-health-state` branch. Raw runner output is retained as a short-lived Actions
+artifact and is never committed. A pull request is opened only when the policy proposes an actual
+catalog status transition; its body includes runner totals, the affected servers, endpoints,
+reasons, and latest observation categories. Runs with no transitions appear only in the Actions
+job summary.
+
 Status policy:
 
-- Both runners must fail on seven consecutive daily runs before quarantine.
-- Any healthy runner resets the dual-failure count; two successful days restore quarantine.
-- Thirty failed days create a retirement candidate and pull request. Automation never retires or
-  deletes a server permanently.
+- Both runners must fail on seven consecutive weekly runs before quarantine.
+- Any healthy runner resets the dual-failure count; two successful weekly runs restore quarantine.
+- Thirty failed weekly runs create a retirement candidate in the health report. Automation never
+  retires or deletes a server permanently.
 - Quarantined and retired definitions remain in canonical history.
 
 After reviewing an automated change, update the catalog version/publication time and run

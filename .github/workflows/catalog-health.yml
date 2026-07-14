@@ -2,13 +2,16 @@ name: Server catalog health
 
 on:
   schedule:
-    - cron: "23 6 * * *"
+    - cron: "23 6 * * 1"
   workflow_dispatch:
+
+concurrency:
+  group: catalog-health
+  cancel-in-progress: false
 
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   probe:
@@ -47,17 +50,20 @@ jobs:
           --catalog catalog/servers.v2.json
           --schema catalog/servers.v2.schema.json
           --runner ${{ matrix.runner }}
-          --output probe-${{ matrix.runner }}.json
+          --output "${{ runner.temp }}/probe-${{ matrix.runner }}.json"
       - uses: actions/upload-artifact@v7
         with:
           name: probe-${{ matrix.runner }}
-          path: probe-${{ matrix.runner }}.json
+          path: ${{ runner.temp }}/probe-${{ matrix.runner }}.json
+          retention-days: 14
 
   aggregate:
     runs-on: ubuntu-latest
     needs: probe
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14.3"
@@ -66,23 +72,62 @@ jobs:
         with:
           pattern: probe-*
           merge-multiple: true
-      - run: >-
+          path: ${{ runner.temp }}/probes
+      - name: Load rolling health state
+        shell: bash
+        run: |
+          state_branch="automation/catalog-health-state"
+          state_ref="refs/remotes/origin/$state_branch"
+          if git ls-remote --exit-code --heads origin "$state_branch" >/dev/null 2>&1; then
+            git fetch --no-tags origin "$state_branch:$state_ref"
+            git show "$state_ref:catalog/health-state.json" \
+              > "$RUNNER_TEMP/previous-health-state.json"
+          else
+            cp catalog/health-state.json "$RUNNER_TEMP/previous-health-state.json"
+          fi
+      - name: Aggregate weekly observations
+        run: >-
           uv run z3950-catalog-health aggregate
           --catalog catalog/servers.v2.json
-          --state catalog/health-state.json
-          --runner-result probe-windows.json
-          --runner-result probe-ubuntu.json
-          --output-catalog catalog/servers.v2.json
-          --output-state catalog/health-state.json
-          --transition-report catalog/transitions.json
+          --state "$RUNNER_TEMP/previous-health-state.json"
+          --runner-result "$RUNNER_TEMP/probes/probe-windows.json"
+          --runner-result "$RUNNER_TEMP/probes/probe-ubuntu.json"
+          --output-catalog "$RUNNER_TEMP/updated-catalog.json"
+          --output-state "$RUNNER_TEMP/updated-health-state.json"
+          --transition-report "$RUNNER_TEMP/health-report.json"
+          --markdown-report "$RUNNER_TEMP/health-report.md"
+      - name: Save rolling health state
+        shell: bash
+        run: |
+          state_branch="automation/catalog-health-state"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --force -B "$state_branch" "$GITHUB_SHA"
+          cp "$RUNNER_TEMP/updated-health-state.json" catalog/health-state.json
+          git add -- catalog/health-state.json
+          git commit -m "Update rolling server health state"
+          git push --force origin "HEAD:refs/heads/$state_branch"
+          git checkout --force -B main "$GITHUB_SHA"
+      - name: Prepare actionable catalog changes
+        id: changes
+        shell: bash
+        run: |
+          cat "$RUNNER_TEMP/health-report.md" >> "$GITHUB_STEP_SUMMARY"
+          if jq -e '.transitions | length > 0' \
+            "$RUNNER_TEMP/health-report.json" >/dev/null; then
+            cp "$RUNNER_TEMP/updated-catalog.json" catalog/servers.v2.json
+            echo "has_transitions=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_transitions=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Create status-transition pull request
+        if: steps.changes.outputs.has_transitions == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          branch: automation/catalog-health
+          branch: automation/catalog-health-review
+          base: main
           delete-branch: true
-          commit-message: "Update server catalog health"
-          title: "Update server catalog health"
-          body: >-
-            Automated two-runner health update. Quarantine and recovery transitions
-            follow the seven-failure/two-success policy. Retirement candidates require
-            maintainer review and are never retired automatically.
+          add-paths: catalog/servers.v2.json
+          commit-message: "Apply server catalog health transitions"
+          title: "Review server catalog health transitions"
+          body-path: ${{ runner.temp }}/health-report.md
