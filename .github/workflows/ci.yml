@@ -159,6 +159,23 @@ jobs:
           cp LICENSE release/LICENSE.txt
           cp src/z3950_search_for_marc/resources/YAZ-LICENSE.txt release/YAZ-LICENSE.txt
           cp src/z3950_search_for_marc/resources/THIRD-PARTY-NOTICES.txt release/THIRD-PARTY-NOTICES.txt
+      - name: Prepare curated release notes
+        env:
+          RELEASE_VERSION: ${{ steps.package.outputs.version }}
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+
+          version = os.environ["RELEASE_VERSION"]
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          heading = f"## {version} "
+          start = changelog.find(heading)
+          if start < 0:
+              raise SystemExit(f"CHANGELOG.md has no section for {version}")
+          end = changelog.find("\n## ", start + len(heading))
+          notes = changelog[start : end if end >= 0 else None].strip() + "\n"
+          Path("release/RELEASE_NOTES.md").write_text(notes, encoding="utf-8")
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -172,5 +189,5 @@ jobs:
           "release/YAZ-LICENSE.txt"
           "release/THIRD-PARTY-NOTICES.txt"
           --verify-tag
-          --generate-notes
+          --notes-file "release/RELEASE_NOTES.md"
           --title "Z39.50 MARC Search ${{ steps.package.outputs.version }}"

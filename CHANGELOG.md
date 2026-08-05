@@ -8,6 +8,8 @@
 - Manual application-update checks from Settings and the Help menu.
 - A notification that links to the GitHub release page when a newer version is available. The
   application does not download or install updates automatically.
+- Actionable catalog-health review summaries with runner totals, affected endpoints, transition
+  reasons, and observations.
 
 ### Changed
 
@@ -15,6 +17,11 @@
 - The Windows installer remembers a user-selected installation directory for future upgrades.
 - Installer validation now verifies that installing over an existing copy retains application
   settings, user data, the saved project location, and the installed executable location.
+- Catalog health checks now run weekly, retain rolling counters on a bot-only state branch, and open
+  a focused review PR only when a server crosses a quarantine or recovery threshold.
+- Catalog health review PRs omit raw probe artifacts and avoid whole-catalog formatting changes.
+- Windows installer packaging is gated to relevant changes while release tags always receive a
+  freshly built and tested installer.
 
 ### Upgrade notes
 
