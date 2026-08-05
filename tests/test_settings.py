@@ -49,5 +49,5 @@ def test_settings_write_is_complete_json(tmp_path: Path) -> None:
 
     payload = json.loads(path.read_text(encoding="utf-8"))
 
-    assert payload["schema_version"] == 2
+    assert payload["schema_version"] == 3
     assert payload["trim_records"] is False

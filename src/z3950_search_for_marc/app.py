@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -60,6 +61,7 @@ from .resources import resource_path
 from .search import SearchCoordinator
 from .settings import SettingsStore
 from .theme import apply_theme
+from .updates import AvailableUpdate, check_for_application_update
 from .widgets import ActivityPanel, RecordPanel, ResultsPanel, SearchPanel
 
 __all__ = ["SettingsDialog", "Z3950SearchApp", "build_application", "run"]
@@ -84,6 +86,26 @@ class _CatalogUpdateTask(QRunnable):
         try:
             result = self.repository.check_for_update()
         except Exception as exc:  # network and validation boundaries are reported to the UI
+            self.signals.failed.emit(str(exc))
+        else:
+            self.signals.completed.emit(result)
+
+
+class _ApplicationUpdateSignals(QObject):
+    completed = Signal(object)
+    failed = Signal(str)
+
+
+class _ApplicationUpdateTask(QRunnable):
+    def __init__(self) -> None:
+        super().__init__()
+        self.signals = _ApplicationUpdateSignals()
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            result = check_for_application_update()
+        except Exception as exc:  # network and GitHub response failures are reported to the UI
             self.signals.failed.emit(str(exc))
         else:
             self.signals.completed.emit(result)
@@ -122,6 +144,8 @@ class Z3950SearchApp(QMainWindow):
         self._successful_servers = 0
         self._failed_servers = 0
         self._update_task: _CatalogUpdateTask | None = None
+        self._app_update_task: _ApplicationUpdateTask | None = None
+        self._app_update_is_manual = False
 
         self._init_ui()
         self._connect_coordinator()
@@ -130,6 +154,8 @@ class Z3950SearchApp(QMainWindow):
             self.app_settings.last_catalog_check_at
         ):
             QTimer.singleShot(1500, self._check_catalog_update)
+        if self.app_settings.check_for_app_updates_at_startup:
+            QTimer.singleShot(2500, self._check_application_update)
 
     def _init_ui(self) -> None:
         self.setWindowTitle(APPLICATION_DISPLAY_NAME)
@@ -179,10 +205,13 @@ class Z3950SearchApp(QMainWindow):
         exit_action.triggered.connect(self.close)
         github_action = QAction("View project on GitHub", self)
         github_action.triggered.connect(self._open_project_repository)
+        app_update_action = QAction("Check for application updates…", self)
+        app_update_action.triggered.connect(lambda: self._check_application_update(manual=True))
         self.addAction(settings_action)
         self.addAction(update_action)
         self.addAction(exit_action)
         self.addAction(github_action)
+        self.addAction(app_update_action)
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(settings_action)
         file_menu.addSeparator()
@@ -190,6 +219,8 @@ class Z3950SearchApp(QMainWindow):
         catalog_menu = self.menuBar().addMenu("Server Catalog")
         catalog_menu.addAction(update_action)
         help_menu = self.menuBar().addMenu("Help")
+        help_menu.addAction(app_update_action)
+        help_menu.addSeparator()
         help_menu.addAction(github_action)
 
         # Stable compatibility attributes for existing UI automation.
@@ -489,9 +520,13 @@ class Z3950SearchApp(QMainWindow):
     def _open_settings_dialog(self) -> None:
         dialog = SettingsDialog(
             self.app_settings,
+            app_version=__version__,
             engine_version=self.engine.version,
             catalog_version=self.catalog_document.catalog_version,
             parent=self,
+        )
+        dialog.app_update_check_requested.connect(
+            lambda: self._check_application_update(manual=True)
         )
         if dialog.exec() != QDialog.DialogCode.Accepted or dialog.saved_settings is None:
             return
@@ -504,6 +539,7 @@ class Z3950SearchApp(QMainWindow):
             trim_records=candidate.trim_records,
             theme=candidate.theme,
             automatic_catalog_updates=candidate.automatic_catalog_updates,
+            check_for_app_updates_at_startup=candidate.check_for_app_updates_at_startup,
             disabled_server_ids=old.disabled_server_ids,
             last_catalog_check_at=old.last_catalog_check_at,
         ).normalized()
@@ -523,6 +559,73 @@ class Z3950SearchApp(QMainWindow):
         self._display_current_record()
         self.log_message("Settings saved and applied.")
 
+    def _check_application_update(self, *, manual: bool = False) -> None:
+        if self._app_update_task is not None:
+            self._app_update_is_manual = self._app_update_is_manual or manual
+            if manual:
+                self._status_bar.showMessage(
+                    "An application update check is already running.", 4000
+                )
+            return
+        self._app_update_is_manual = manual
+        if manual:
+            self._status_bar.showMessage("Checking GitHub for application updates…")
+        task = _ApplicationUpdateTask()
+        task.signals.completed.connect(self._application_update_completed)
+        task.signals.failed.connect(self._application_update_failed)
+        self._app_update_task = task
+        QThreadPool.globalInstance().start(task)
+
+    @Slot(object)
+    def _application_update_completed(self, update: object) -> None:
+        manual = self._app_update_is_manual
+        self._app_update_task = None
+        if update is not None and not isinstance(update, AvailableUpdate):
+            self._application_update_failed("GitHub returned an invalid update result.")
+            return
+        self._app_update_is_manual = False
+        if update is None:
+            self._status_bar.showMessage(f"Z39.50 MARC Search {__version__} is current.", 5000)
+            if manual:
+                QMessageBox.information(
+                    self,
+                    "No application update available",
+                    f"You are using the latest released version ({__version__}).",
+                )
+            return
+        assert isinstance(update, AvailableUpdate)
+        self.log_message(f"Application version {update.version} is available on GitHub.")
+        message = QMessageBox(self)
+        message.setIcon(QMessageBox.Icon.Information)
+        message.setWindowTitle("Application update available")
+        message.setText(f"Z39.50 MARC Search {update.version} is available.")
+        message.setInformativeText(
+            f"You are using version {__version__}. Open the GitHub release page to view the "
+            "installer and release notes. Your settings and chosen save directory are preserved "
+            "when you install the update over this version."
+        )
+        view_button = message.addButton("View release on GitHub", QMessageBox.ButtonRole.AcceptRole)
+        message.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        message.exec()
+        if message.clickedButton() is view_button:
+            QDesktopServices.openUrl(QUrl(update.page_url))
+
+    @Slot(str)
+    def _application_update_failed(self, message: str) -> None:
+        manual = self._app_update_is_manual
+        self._app_update_task = None
+        self._app_update_is_manual = False
+        self.log_message(f"Could not check for an application update: {message}")
+        self._status_bar.showMessage("The application update check could not be completed.", 5000)
+        if manual:
+            QMessageBox.warning(
+                self,
+                "Application update check failed",
+                "The latest release could not be checked. Confirm that you are online and try "
+                "again later.\n\n"
+                f"Details: {message}",
+            )
+
     def _check_catalog_update(self) -> None:
         if self._update_task is not None:
             return
@@ -536,16 +639,7 @@ class Z3950SearchApp(QMainWindow):
     @Slot(object)
     def _catalog_update_completed(self, updated: object) -> None:
         self._update_task = None
-        self.app_settings = AppSettings(
-            max_concurrent_queries=self.app_settings.max_concurrent_queries,
-            server_timeout_seconds=self.app_settings.server_timeout_seconds,
-            default_save_directory=self.app_settings.default_save_directory,
-            trim_records=self.app_settings.trim_records,
-            theme=self.app_settings.theme,
-            automatic_catalog_updates=self.app_settings.automatic_catalog_updates,
-            disabled_server_ids=self.app_settings.disabled_server_ids,
-            last_catalog_check_at=datetime.now(UTC),
-        )
+        self.app_settings = replace(self.app_settings, last_catalog_check_at=datetime.now(UTC))
         self.settings_store.save(self.app_settings)
         if updated is None:
             self.log_message("The server catalog is already current.")
@@ -559,16 +653,7 @@ class Z3950SearchApp(QMainWindow):
     @Slot(str)
     def _catalog_update_failed(self, message: str) -> None:
         self._update_task = None
-        self.app_settings = AppSettings(
-            max_concurrent_queries=self.app_settings.max_concurrent_queries,
-            server_timeout_seconds=self.app_settings.server_timeout_seconds,
-            default_save_directory=self.app_settings.default_save_directory,
-            trim_records=self.app_settings.trim_records,
-            theme=self.app_settings.theme,
-            automatic_catalog_updates=self.app_settings.automatic_catalog_updates,
-            disabled_server_ids=self.app_settings.disabled_server_ids,
-            last_catalog_check_at=datetime.now(UTC),
-        )
+        self.app_settings = replace(self.app_settings, last_catalog_check_at=datetime.now(UTC))
         self.settings_store.save(self.app_settings)
         self.log_message(f"Catalog update was not installed: {message}")
 

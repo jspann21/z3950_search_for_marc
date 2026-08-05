@@ -174,6 +174,7 @@ class AppSettings:
     trim_records: bool = True
     theme: Theme = Theme.LIGHT
     automatic_catalog_updates: bool = True
+    check_for_app_updates_at_startup: bool = True
     disabled_server_ids: tuple[str, ...] = ()
     last_catalog_check_at: datetime | None = None
 
@@ -185,6 +186,7 @@ class AppSettings:
             trim_records=bool(self.trim_records),
             theme=Theme(self.theme),
             automatic_catalog_updates=bool(self.automatic_catalog_updates),
+            check_for_app_updates_at_startup=bool(self.check_for_app_updates_at_startup),
             disabled_server_ids=tuple(sorted(set(self.disabled_server_ids))),
             last_catalog_check_at=(
                 self.last_catalog_check_at.astimezone(UTC)

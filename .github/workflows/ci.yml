@@ -155,6 +155,7 @@ jobs:
       - name: Add release notices
         shell: bash
         run: |
+          cp CHANGELOG.md release/CHANGELOG.md
           cp LICENSE release/LICENSE.txt
           cp src/z3950_search_for_marc/resources/YAZ-LICENSE.txt release/YAZ-LICENSE.txt
           cp src/z3950_search_for_marc/resources/THIRD-PARTY-NOTICES.txt release/THIRD-PARTY-NOTICES.txt
@@ -166,6 +167,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME"
           "release/Z3950MarcSearch-${{ steps.package.outputs.version }}-x64.msi"
           "release/SHA256SUMS.txt"
+          "release/CHANGELOG.md"
           "release/LICENSE.txt"
           "release/YAZ-LICENSE.txt"
           "release/THIRD-PARTY-NOTICES.txt"

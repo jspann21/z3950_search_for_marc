@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -25,10 +26,13 @@ from .domain.models import AppSettings, Theme
 
 
 class SettingsDialog(QDialog):
+    app_update_check_requested = Signal()
+
     def __init__(
         self,
         settings: AppSettings,
         *,
+        app_version: str,
         engine_version: str,
         catalog_version: str,
         parent: QWidget | None = None,
@@ -40,7 +44,8 @@ class SettingsDialog(QDialog):
         self._legacy_catalog_path: Path | None = None
 
         intro = QLabel(
-            f"Embedded YAZ {engine_version} · Server catalog {catalog_version}. "
+            f"Application {app_version} · Embedded YAZ {engine_version} · "
+            f"Server catalog {catalog_version}. "
             "No external protocol software is required.",
             self,
         )
@@ -66,6 +71,10 @@ class SettingsDialog(QDialog):
         self.theme_input.setCurrentIndex(self.theme_input.findData(settings.theme))
         self.automatic_updates_checkbox = QCheckBox("Update the server catalog automatically", self)
         self.automatic_updates_checkbox.setChecked(settings.automatic_catalog_updates)
+        self.app_updates_checkbox = QCheckBox("Check when the application starts", self)
+        self.app_updates_checkbox.setChecked(settings.check_for_app_updates_at_startup)
+        self.check_app_update_button = QPushButton("Check now…", self)
+        self.check_app_update_button.clicked.connect(self.app_update_check_requested)
         self.import_catalog_input = QLineEdit(self)
         self.import_catalog_input.setReadOnly(True)
         self.import_catalog_input.setPlaceholderText("No legacy catalog selected")
@@ -89,6 +98,7 @@ class SettingsDialog(QDialog):
         )
         form.addRow("Record trimming", self.trim_records_checkbox)
         form.addRow("Catalog updates", self.automatic_updates_checkbox)
+        form.addRow("Application updates", self._application_update_row())
         form.addRow(
             "Import old JSON",
             self._browse_row(self.import_catalog_input, self._browse_legacy_catalog),
@@ -140,6 +150,14 @@ class SettingsDialog(QDialog):
         row.addWidget(default_label)
         return container
 
+    def _application_update_row(self) -> QWidget:
+        container = QWidget(self)
+        row = QHBoxLayout(container)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.addWidget(self.app_updates_checkbox, 1)
+        row.addWidget(self.check_app_update_button)
+        return container
+
     def _browse_save_directory(self) -> None:
         directory = QFileDialog.getExistingDirectory(
             self,
@@ -172,5 +190,6 @@ class SettingsDialog(QDialog):
             trim_records=self.trim_records_checkbox.isChecked(),
             theme=Theme(self.theme_input.currentData()),
             automatic_catalog_updates=self.automatic_updates_checkbox.isChecked(),
+            check_for_app_updates_at_startup=self.app_updates_checkbox.isChecked(),
         ).normalized()
         self.accept()

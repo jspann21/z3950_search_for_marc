@@ -20,7 +20,12 @@ def test_main_window_searches_and_displays_record(qtbot, tmp_path: Path) -> None
     paths = AppDataPaths(tmp_path / "data", tmp_path / "logs")
     repository = CatalogRepository(paths, bundled_path=bundled)
     settings = SettingsStore(path=paths.settings)
-    settings.save(AppSettings(automatic_catalog_updates=False))
+    settings.save(
+        AppSettings(
+            automatic_catalog_updates=False,
+            check_for_app_updates_at_startup=False,
+        )
+    )
     qsettings = QSettings(str(tmp_path / "legacy.ini"), QSettings.Format.IniFormat)
     window = Z3950SearchApp(
         qsettings,

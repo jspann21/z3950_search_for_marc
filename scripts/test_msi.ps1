@@ -40,6 +40,26 @@ try {
 
     New-Item -ItemType Directory -Force $UserData | Out-Null
     Set-Content -LiteralPath (Join-Path $UserData "uninstall-test.txt") -Value "remove me"
+
+    $PreservedProjectDirectory = Join-Path $UserData "saved-project-location"
+    New-Item -ItemType Directory -Force $PreservedProjectDirectory | Out-Null
+    $PreservationMarker = Join-Path $UserData "upgrade-preservation-test.txt"
+    Set-Content -LiteralPath $PreservationMarker -Value $PreservedProjectDirectory
+    $Reinstall = Start-Process msiexec.exe `
+        -ArgumentList "/i", "`"$Msi`"", "/qn", "/norestart", "/l*v", "`"$LogDirectory\reinstall.log`"" `
+        -WindowStyle Hidden -Wait -PassThru
+    if ($Reinstall.ExitCode -ne 0) {
+        throw "MSI over-install failed with $($Reinstall.ExitCode)."
+    }
+    if (-not (Test-Path -LiteralPath $PreservationMarker)) {
+        throw "An over-install removed existing application settings or user data."
+    }
+    if ((Get-Content -LiteralPath $PreservationMarker -Raw).Trim() -ne $PreservedProjectDirectory) {
+        throw "An over-install changed the saved project location."
+    }
+    if (-not (Test-Path -LiteralPath $Executable)) {
+        throw "An over-install changed or removed the installed application location."
+    }
 }
 finally {
     $Uninstall = Start-Process msiexec.exe `
@@ -53,4 +73,4 @@ finally {
 if (Test-Path -LiteralPath $InstallDirectory) { throw "Install directory remained after uninstall." }
 if (Test-Path -LiteralPath $UserData) { throw "User data remained after default uninstall." }
 if (Test-Path -LiteralPath $DesktopShortcut) { throw "Desktop shortcut remained after uninstall." }
-Write-Host "MSI wizard defaults, clean install, self-test, and uninstall acceptance passed."
+Write-Host "MSI clean install, over-install preservation, self-test, and uninstall acceptance passed."

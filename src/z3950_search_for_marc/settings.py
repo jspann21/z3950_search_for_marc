@@ -51,13 +51,15 @@ class SettingsStore:
         atomic_write_json(
             self.path,
             {
-                "schema_version": 2,
+                "schema_version": 3,
                 "max_concurrent_queries": normalized.max_concurrent_queries,
                 "server_timeout_seconds": normalized.server_timeout_seconds,
                 "default_save_directory": normalized.default_save_directory,
                 "trim_records": normalized.trim_records,
                 "theme": normalized.theme.value,
                 "automatic_catalog_updates": normalized.automatic_catalog_updates,
+                "check_for_app_updates_at_startup": (normalized.check_for_app_updates_at_startup),
+                "disabled_server_ids": list(normalized.disabled_server_ids),
                 "last_catalog_check_at": (
                     normalized.last_catalog_check_at.isoformat().replace("+00:00", "Z")
                     if normalized.last_catalog_check_at
@@ -76,6 +78,9 @@ class SettingsStore:
             trim_records=bool(raw.get("trim_records", True)),
             theme=_parse_theme(raw.get("theme")),
             automatic_catalog_updates=bool(raw.get("automatic_catalog_updates", True)),
+            check_for_app_updates_at_startup=bool(
+                raw.get("check_for_app_updates_at_startup", True)
+            ),
             disabled_server_ids=tuple(str(value) for value in raw.get("disabled_server_ids", [])),
             last_catalog_check_at=_parse_datetime(raw.get("last_catalog_check_at")),
         )

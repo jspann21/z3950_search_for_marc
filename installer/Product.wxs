@@ -25,6 +25,14 @@
 
     <Property Id="USERDATADIR" Value="%LOCALAPPDATA%\Z3950MarcSearch" />
     <Property Id="PRESERVEUSERDATA" Value="0" Secure="yes" />
+    <Property Id="APPLICATIONFOLDER">
+      <RegistrySearch
+        Id="PreviousInstallDirectorySearch"
+        Root="HKCU"
+        Key="Software\jspann\Z3950MarcSearch"
+        Name="InstallDirectory"
+        Type="raw" />
+    </Property>
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Z39.50 MARC Search" />
     <Property Id="WixShellExecTarget" Value="[#MainExecutableFile]" />
     <Property Id="ARPPRODUCTICON" Value="ApplicationIcon" />
@@ -41,6 +49,12 @@
           Description="Search Z39.50 targets and export MARC records"
           WorkingDirectory="APPLICATIONFOLDER" />
       </File>
+      <RegistryValue
+        Root="HKCU"
+        Key="Software\jspann\Z3950MarcSearch"
+        Name="InstallDirectory"
+        Type="string"
+        Value="[APPLICATIONFOLDER]" />
     </Component>
 
     <Component Id="DesktopShortcutComponent" Directory="APPLICATIONFOLDER" Guid="0369E680-E131-4AE2-90A7-52152B8D96DD">

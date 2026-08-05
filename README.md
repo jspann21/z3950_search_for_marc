@@ -52,7 +52,10 @@ Windows installer.
 - **Built-in catalog maintenance.** Signed catalog updates, a last-known-good cache, custom-server
   imports, and locally disabled targets are kept separate from the application release.
 - **Adjustable behavior.** Configure concurrency, per-server timeout, save directory, record
-  trimming, light/dark appearance, and automatic catalog updates.
+  trimming, light/dark appearance, automatic catalog updates, and application update checks.
+- **Release notifications.** Optionally check GitHub when the application starts, or check manually
+  from Settings or Help. When a newer release exists, the app offers to open its GitHub release page;
+  it never downloads or installs an update automatically.
 - **Local settings and no telemetry.** Settings stay under `%LOCALAPPDATA%\Z3950MarcSearch`. The
   application collects no queries, usage data, or failure telemetry. Searches are, of course, sent
   to the Z39.50 servers you select.
@@ -222,23 +225,25 @@ The private Ed25519 key must remain outside source control. See
 ```
 
 Packaging performs a locked sync, rebuilds YAZ, creates a Nuitka standalone directory, runs the
-packaged `--self-test`, and wraps it in `dist/Z3950MarcSearch-2.0.0-x64.msi` with WiX. CI repeats the
+packaged `--self-test`, and wraps it in `dist/Z3950MarcSearch-2.0.1-x64.msi` with WiX. CI repeats the
 clean build and publishes the MSI, checksums, standalone inspection artifact, GPL license, and YAZ
 notice.
 
 After the release commit is on `main`, push the matching version tag to create the GitHub Release:
 
 ```powershell
-git tag v2.0.0
-git push origin v2.0.0
+git tag v2.0.1
+git push origin v2.0.1
 ```
 
 The release workflow rejects a tag that does not match the version in `pyproject.toml`, then uploads
 the tested MSI, SHA-256 checksums, and license notices to the GitHub Release.
 
-The installer is per-user, defaults to `%LOCALAPPDATA%\Programs\Z39.50 MARC Search`, and supports
-in-place upgrades. Uninstall removes application-owned `%LOCALAPPDATA%\Z3950MarcSearch` data by
-default; an administrator can retain it with `PRESERVEUSERDATA=1` on the `msiexec /x` command.
+The installer is per-user, defaults to `%LOCALAPPDATA%\Programs\Z39.50 MARC Search`, remembers a
+chosen install directory, and supports installing a newer package over the existing copy. Upgrade
+installs preserve `%LOCALAPPDATA%\Z3950MarcSearch`, including settings, cached/custom catalogs, and
+the selected save directory. Uninstall removes that application-owned data by default; an
+administrator can retain it with `PRESERVEUSERDATA=1` on the `msiexec /x` command.
 
 ## License
 

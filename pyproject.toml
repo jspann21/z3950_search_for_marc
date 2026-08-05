@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "z3950-search-for-marc"
-version = "2.0.0"
+version = "2.0.1"
 description = "Self-contained desktop client for searching Z39.50 targets and exporting MARC records."
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
