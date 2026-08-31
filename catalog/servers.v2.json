@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "catalog_version": "2026.07.13.2",
-  "published_at": "2026-08-17T07:27:45.152619Z",
+  "published_at": "2026-08-31T14:04:36.926802Z",
   "servers": [
     {
       "id": "dcf9d503-34c5-52e3-a90b-87ddf2e6e673",
@@ -1830,7 +1830,7 @@
       "query_charset": "utf-8",
       "marc_charset": "auto",
       "priority": 500,
-      "status": "active",
+      "status": "quarantined",
       "last_verified_at": "2026-07-13T17:02:02.678278Z"
     },
     {
