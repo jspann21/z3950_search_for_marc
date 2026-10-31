@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=83.0.0", "wheel", "cffi>=2.0,<3"]
+requires = ["setuptools>=84.1.0,<85", "wheel", "cffi>=2.0,<3"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,7 +25,7 @@ dev = [
   "pytest>=9.0.3,<10",
   "pytest-qt>=4.5,<5",
   "ruff>=0.13,<1",
-  "setuptools>=83.0.0,<84",
+  "setuptools>=84.1.0,<85",
 ]
 package = [
   "nuitka>=4.1,<5",
